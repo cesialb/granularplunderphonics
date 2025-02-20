@@ -48,7 +48,8 @@ GranularPlunderphonicsController::~GranularPlunderphonicsController()
 //------------------------------------------------------------------------
 ::Steinberg::Vst::IPlugView* GranularPlunderphonicsController::createView(::Steinberg::FIDString name)
 {
-    mLogger.info("View requested");
+    std::string viewMessage = "View requested";
+    mLogger.info(viewMessage.c_str());
     return nullptr;
 }
 
@@ -56,7 +57,8 @@ GranularPlunderphonicsController::~GranularPlunderphonicsController()
 ::Steinberg::FUnknown* GranularPlunderphonicsController::createInstance(void* /*context*/)
 {
     // This is a placeholder - will be properly implemented when SDK is available
-    return nullptr;
+    // Cast using C-style cast which is more permissive for incomplete types
+    return (::Steinberg::FUnknown*)(new GranularPlunderphonicsController());
 }
 
 } // namespace GranularPlunderphonics

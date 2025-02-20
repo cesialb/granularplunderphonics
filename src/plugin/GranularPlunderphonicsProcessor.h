@@ -1,52 +1,71 @@
+/**
+ * @file GranularPlunderphonicsProcessor.h
+ * @brief Defines the audio processor component of the GranularPlunderphonics VST3 plugin
+ */
+
 #pragma once
 
-#include "public.sdk/source/vst/vstaudioeffect.h"
 #include "pluginterfaces/base/funknown.h"
-#include "pluginterfaces/vst/ivstaudioprocessor.h"
 #include "pluginterfaces/vst/vsttypes.h"
+#include "public.sdk/source/vst/vstaudioeffect.h"
 #include "../common/Logger.h"
-#include "../common/ErrorHandling.h"
 #include "GranularPlunderphonicsIDs.h"
 
 namespace GranularPlunderphonics {
 
-class GranularPlunderphonicsProcessor : public Steinberg::Vst::AudioEffect {
+//------------------------------------------------------------------------
+/**
+ * @class GranularPlunderphonicsProcessor
+ * @brief Main audio processor for the Granular Plunderphonics VST3 plugin
+ */
+class GranularPlunderphonicsProcessor : public Steinberg::Vst::AudioEffect
+{
 public:
-    // Constructor/Destructor
+    //------------------------------------------------------------------------
+    // Constructor and destructor
+    //------------------------------------------------------------------------
     GranularPlunderphonicsProcessor();
-    ~GranularPlunderphonicsProcessor() SMTG_OVERRIDE = default;
 
-    // Factory method for VST3
-    static Steinberg::FUnknown* createInstance(void*) {
-        return (Steinberg::Vst::IAudioProcessor*)new GranularPlunderphonicsProcessor();
-    }
-
-    // AudioEffect overrides
+    //------------------------------------------------------------------------
+    // AudioEffect interface implementation
+    //------------------------------------------------------------------------
+    /** Called at first after constructor */
     Steinberg::tresult PLUGIN_API initialize(Steinberg::FUnknown* context) SMTG_OVERRIDE;
-    Steinberg::tresult PLUGIN_API terminate() SMTG_OVERRIDE;
+
+    /** Called after initialize */
     Steinberg::tresult PLUGIN_API setActive(Steinberg::TBool state) SMTG_OVERRIDE;
+
+    /** Called before destructor */
+    Steinberg::tresult PLUGIN_API terminate() SMTG_OVERRIDE;
+
+    /** Audio processing */
     Steinberg::tresult PLUGIN_API process(Steinberg::Vst::ProcessData& data) SMTG_OVERRIDE;
+
+    /** Setup processing */
     Steinberg::tresult PLUGIN_API setupProcessing(Steinberg::Vst::ProcessSetup& setup) SMTG_OVERRIDE;
-    Steinberg::tresult PLUGIN_API setBusArrangements(Steinberg::Vst::SpeakerArrangement* inputs,
-                                                    Steinberg::int32 numIns,
-                                                    Steinberg::Vst::SpeakerArrangement* outputs,
-                                                    Steinberg::int32 numOuts) SMTG_OVERRIDE;
+
+    /** Bus arrangement setup */
+    Steinberg::tresult PLUGIN_API setBusArrangements(
+        Steinberg::Vst::SpeakerArrangement* inputs, Steinberg::int32 numIns,
+        Steinberg::Vst::SpeakerArrangement* outputs, Steinberg::int32 numOuts) SMTG_OVERRIDE;
+
+    /** Creation method called by the factory */
+    static Steinberg::FUnknown* createInstance(void* context);
 
 protected:
+    //------------------------------------------------------------------------
+    // Member variables
+    //------------------------------------------------------------------------
+    bool mBypass;         // Bypass state
+    float mSampleRate;    // Current sample rate
+    int mBlockSize;       // Maximum block size
+    Logger mLogger;       // Logger instance
+
+    //------------------------------------------------------------------------
     // Helper methods
-    Steinberg::tresult processMonoToStereo(Steinberg::Vst::ProcessData& data);
+    //------------------------------------------------------------------------
+    /** Handle parameter changes */
     void processParameterChanges(Steinberg::Vst::IParameterChanges* paramChanges);
-
-private:
-    bool mBypass;
-    float mSampleRate;
-    int mBlockSize;
-    Logger mLogger;
-    ErrorHandler mErrorHandler;
-
-    DEFINE_INTERFACES
-    DEF_INTERFACE(Steinberg::Vst::IAudioProcessor)
-    END_DEFINE_INTERFACES
 };
 
 } // namespace GranularPlunderphonics

@@ -8,22 +8,21 @@
 #include <string>
 #include "../common/Logger.h"
 
-// Forward declarations for VST3 types until SDK is available
+// Include VST3 SDK headers
+#include "base/source/fobject.h"
+#include "pluginterfaces/base/funknown.h"
+#include "pluginterfaces/base/ipluginbase.h"
+#include "pluginterfaces/vst/vsttypes.h"
+
 namespace Steinberg {
-    typedef int tresult;
+    class IBStream;  // Add this line
     typedef const char* FIDString;
-    const tresult kResultOk = 0;
-    const tresult kResultFalse = 1;
-    const tresult kInvalidArgument = 2;
 
     namespace Vst {
         class EditControllerEx1;
         class IEditController;
         class IPlugView;
     }
-
-    class FUnknown;
-    class IBStream;
 }
 
 // Plugin-specific forward declarations
@@ -37,9 +36,6 @@ enum GranularParameters {
 /**
  * @class GranularPlunderphonicsController
  * @brief Controller implementation for the Granular Plunderphonics VST3 plugin
- *
- * This is a placeholder declaration until the VST3 SDK is available.
- * The actual implementation will inherit from Steinberg::Vst::EditControllerEx1.
  */
 class GranularPlunderphonicsController
 {
@@ -60,7 +56,6 @@ public:
 
     /**
      * @brief Factory method to create instance
-     * This will be properly implemented when the SDK is available
      */
     static ::Steinberg::FUnknown* createInstance(void* context);
 

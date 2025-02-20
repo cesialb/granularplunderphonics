@@ -805,11 +805,11 @@ void ParameterManager::processParameterChanges(float sampleRate)
             stream.write(reinterpret_cast<const char*>(&value), sizeof(value));
         }
 
-        mLogger.template info<>("Saved parameter state");  // Added 'template' keyword
+        mLogger.info("Saved parameter state");  // Added 'template' keyword
         return true;
     }
     catch (const std::exception& e) {
-        mLogger.template error<>("Failed to save parameter state");  // Added 'template' keyword
+        mLogger.error("Failed to save parameter state");  // Added 'template' keyword
         return false;
     }
 }

@@ -11,45 +11,22 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
 endif()
 
-# Output directories
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(VST3_OUTPUT_DIR ${CMAKE_BINARY_DIR}/VST3)
-
-# Include directories for homebrew dependencies
-include_directories(SYSTEM "/opt/homebrew/include")
-
-# Find dependencies (only need to find spdlog once)
-find_package(spdlog REQUIRED)
-
-# VST3 SDK setup with your specific path
-set(VST3_SDK_ROOT "/Users/raydiator/CLionProjects/GranularPlunderphonics/vst3sdk")
-if(NOT EXISTS "${VST3_SDK_ROOT}/CMakeLists.txt")
-    message(FATAL_ERROR "VST3 SDK not found at ${VST3_SDK_ROOT}")
+# Define DEVELOPMENT for Debug builds and RELEASE for Release builds
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_definitions(-DDEVELOPMENT=1 -D_DEBUG=1)
+else()
+    add_definitions(-DRELEASE=1 -DNDEBUG=1)
 endif()
 
-# Add VST3 SDK cmake modules path
-list(APPEND CMAKE_MODULE_PATH
-        "${VST3_SDK_ROOT}/cmake/modules"
-)
+# Find dependencies
+find_package(spdlog REQUIRED)
 
-# Include VST3 SDK modules
-include(SMTG_Global)
-include(SMTG_AddVST3Library)
-include(SMTG_Bundle)
-include(SMTG_ExportedSymbols)
-include(SMTG_PrefixHeader)
-include(SMTG_PlatformIOS)
-include(SMTG_PlatformToolset)
-include(SMTG_CoreAudioSupport)
-include(SMTG_AAXSupport)
-include(SMTG_VstGuiSupport)
-include(SMTG_UniversalBinary)
-include(SMTG_AddVST3Options)
-
-# Add VST3 SDK as subdirectory
-add_subdirectory(${VST3_SDK_ROOT})
+# VST3 SDK setup
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/vst3sdk/CMakeLists.txt)
+    add_subdirectory(vst3sdk)
+else()
+    message(FATAL_ERROR "VST3 SDK not found. Please add it as a submodule or specify VST3_SDK_ROOT.")
+endif()
 
 # Enable testing
 enable_testing()
@@ -57,11 +34,3 @@ enable_testing()
 # Add subdirectories
 add_subdirectory(src)
 add_subdirectory(test)
-
-# Print configuration summary
-message(STATUS "Configuration Summary:")
-message(STATUS "  Project: ${PROJECT_NAME} v${PROJECT_VERSION}")
-message(STATUS "  Build type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "  VST3 SDK: ${VST3_SDK_ROOT}")
-message(STATUS "  C++ Standard: ${CMAKE_CXX_STANDARD}")
-message(STATUS "  Output directory: ${VST3_OUTPUT_DIR}")
