@@ -1,8 +1,11 @@
 # Source directory CMakeLists.txt
+
+# Define source files
 set(PLUGIN_SOURCES
         plugin/GranularPlunderphonicsProcessor.cpp
         plugin/GranularPlunderphonicsController.cpp
         plugin/GranularPlunderphonicsEntry.cpp
+        plugin/ParameterManager.cpp
         common/Logger.cpp
         common/ErrorHandling.cpp
 )
@@ -11,13 +14,15 @@ set(PLUGIN_HEADERS
         plugin/GranularPlunderphonicsProcessor.h
         plugin/GranularPlunderphonicsController.h
         plugin/GranularPlunderphonicsIDs.h
+        plugin/GranularParameters.h
+        plugin/ParameterManager.h
         plugin/version.h
         common/Logger.h
         common/ErrorHandling.h
 )
 
-# VST3 plugin target
-smtg_add_vst3plugin(GranularPlunderphonics
+# Create the plugin target
+add_library(GranularPlunderphonics MODULE
         ${PLUGIN_SOURCES}
         ${PLUGIN_HEADERS}
 )
@@ -32,9 +37,6 @@ target_include_directories(GranularPlunderphonics
 # Link dependencies
 target_link_libraries(GranularPlunderphonics
         PRIVATE
-        sdk
-        sdk_common
-        sdk_vstgui
         spdlog::spdlog
 )
 
@@ -52,10 +54,14 @@ target_compile_definitions(GranularPlunderphonics
         $<$<CONFIG:Debug>:DEBUG_BUILD>
 )
 
-# Install plugin
-smtg_install_vst3_plugin(GranularPlunderphonics)
+# Set output directory
+set_target_properties(GranularPlunderphonics PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY "${VST3_OUTPUT_DIR}"
+        RUNTIME_OUTPUT_DIRECTORY "${VST3_OUTPUT_DIR}"
+)
 
-# Plugin validator - runs the VST3 validator on the plugin
-if(SMTG_RUN_VST_VALIDATOR)
-    smtg_run_vst3_validator(GranularPlunderphonics)
-endif()
+# Installation
+install(TARGETS GranularPlunderphonics
+        LIBRARY DESTINATION "${VST3_OUTPUT_DIR}"
+        RUNTIME DESTINATION "${VST3_OUTPUT_DIR}"
+)

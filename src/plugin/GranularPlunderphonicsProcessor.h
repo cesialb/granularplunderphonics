@@ -1,110 +1,51 @@
-/**
- * @file GranularPlunderphonicsProcessor.h
- * @brief Defines the audio processor component of the GranularPlunderphonics VST3 plugin
- */
-
 #pragma once
 
+#include "pluginterfaces/base/funknown.h"
+#include "pluginterfaces/vst/ivstaudioprocessor.h"
+#include "public.sdk/source/vst/vstaudioeffect.h"
 #include "../common/Logger.h"
 #include "../common/ErrorHandling.h"
 #include "GranularPlunderphonicsIDs.h"
 
-// Global forward declarations for VST3 types (outside our namespace)
-namespace Steinberg {
-    typedef int tresult;
-    typedef bool TBool;
-    typedef int int32;
-    class FUnknown;
-    class IBStream;
-
-    namespace Vst {
-        struct ProcessData;
-        struct SpeakerArrangement;
-        typedef float Sample32;
-        class IAudioProcessor;
-        class IParameterChanges;
-        class AudioEffect;
-    }
-}
-
-// SMTG_OVERRIDE macro replacement
-#ifndef SMTG_OVERRIDE
-#define SMTG_OVERRIDE override
-#endif
-
-// PLUGIN_API macro replacement
-#ifndef PLUGIN_API
-#define PLUGIN_API virtual
-#endif
+using namespace Steinberg;  // Add this to use Steinberg namespace directly
 
 namespace GranularPlunderphonics {
 
-//------------------------------------------------------------------------
-/**
- * @class GranularPlunderphonicsProcessor
- * @brief Main audio processor for the Granular Plunderphonics VST3 plugin
- *
- * This is a placeholder declaration until the VST3 SDK is available.
- * The actual implementation will inherit from Steinberg::Vst::AudioEffect.
- */
-class GranularPlunderphonicsProcessor
-{
-public:
-    //------------------------------------------------------------------------
-    // Constructor and destructor
-    //------------------------------------------------------------------------
-    GranularPlunderphonicsProcessor();
-    virtual ~GranularPlunderphonicsProcessor();
+    class GranularPlunderphonicsProcessor : public Vst::AudioEffect {
+    public:
+        GranularPlunderphonicsProcessor();
+        virtual ~GranularPlunderphonicsProcessor() = default;
 
-    //------------------------------------------------------------------------
-    // AudioEffect interface stubs (will be implemented when SDK is available)
-    //------------------------------------------------------------------------
-    /** Called at first after constructor */
-    PLUGIN_API ::Steinberg::tresult initialize(::Steinberg::FUnknown* context);
+        static FUnknown* createInstance(void*) {
+            return (Vst::IAudioProcessor*)new GranularPlunderphonicsProcessor();
+        }
 
-    /** Called after initialize */
-    PLUGIN_API ::Steinberg::tresult setActive(::Steinberg::TBool state);
+        //------------------------------------------------------------------------
+        // AudioEffect interface implementation
+        //------------------------------------------------------------------------
+        tresult PLUGIN_API initialize(FUnknown* context) SMTG_OVERRIDE;
+        tresult PLUGIN_API terminate() SMTG_OVERRIDE;
+        tresult PLUGIN_API setActive(TBool state) SMTG_OVERRIDE;
+        tresult PLUGIN_API process(Vst::ProcessData& data) SMTG_OVERRIDE;
+        tresult PLUGIN_API setupProcessing(Vst::ProcessSetup& setup) SMTG_OVERRIDE;
+        tresult PLUGIN_API setBusArrangements(Vst::SpeakerArrangement* inputs,
+                                            int32 numIns,
+                                            Vst::SpeakerArrangement* outputs,
+                                            int32 numOuts) SMTG_OVERRIDE;
 
-    /** Called before destructor */
-    PLUGIN_API ::Steinberg::tresult terminate();
+    protected:
+        //------------------------------------------------------------------------
+        // Custom methods
+        //------------------------------------------------------------------------
+        tresult processMonoToStereo(Vst::ProcessData& data);
+        void processParameterChanges(Vst::IParameterChanges* paramChanges);
 
-    /** Audio processing */
-    PLUGIN_API ::Steinberg::tresult process(::Steinberg::Vst::ProcessData& data);
-
-    /** For persistence */
-    PLUGIN_API ::Steinberg::tresult setState(::Steinberg::IBStream* state);
-    PLUGIN_API ::Steinberg::tresult getState(::Steinberg::IBStream* state);
-
-    /** Bus arrangement setup */
-    PLUGIN_API ::Steinberg::tresult setBusArrangements(
-        ::Steinberg::Vst::SpeakerArrangement* inputs, ::Steinberg::int32 numIns,
-        ::Steinberg::Vst::SpeakerArrangement* outputs, ::Steinberg::int32 numOuts);
-
-    /** Creation method called by the factory */
-    static ::Steinberg::FUnknown* createInstance(void* context);
-
-    //------------------------------------------------------------------------
-    // Custom methods
-    //------------------------------------------------------------------------
-    /** Process mono input to stereo output */
-    ::Steinberg::tresult processMonoToStereo(
-        ::Steinberg::Vst::ProcessData& data,
-        const ::Steinberg::Vst::Sample32* inBuffer,
-        ::Steinberg::Vst::Sample32* outLeftBuffer,
-        ::Steinberg::Vst::Sample32* outRightBuffer);
-
-    /** Handle parameter changes */
-    void processParameterChanges(::Steinberg::Vst::IParameterChanges* paramChanges);
-
-protected:
-    //------------------------------------------------------------------------
-    // Member variables
-    //------------------------------------------------------------------------
-    bool mBypass;                // Bypass state
-    float mSampleRate;           // Current sample rate
-    int mBlockSize;              // Maximum block size
-    Logger mLogger;              // Logger instance
-    ErrorHandler mErrorHandler;  // Error handling
-};
+    private:
+        bool mBypass;
+        float mSampleRate;
+        int mBlockSize;
+        Logger mLogger;
+        ErrorHandler mErrorHandler;
+    };
 
 } // namespace GranularPlunderphonics

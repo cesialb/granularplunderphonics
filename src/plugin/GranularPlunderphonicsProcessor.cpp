@@ -1,146 +1,134 @@
-/**
- * @file GranularPlunderphonicsProcessor.cpp
- * @brief Implementation of the GranularPlunderphonicsProcessor class
- */
-
 #include "GranularPlunderphonicsProcessor.h"
-#include <algorithm>
-#include <cstring>
-
-// Additional forward declarations in global namespace
-namespace Steinberg {
-    const tresult kResultOk = 0;
-    const tresult kResultFalse = 1;
-    const tresult kInvalidArgument = 2;
-    const tresult kNotImplemented = 3;
-    const tresult kInternalError = 4;
-    const tresult kNotInitialized = 5;
-    const tresult kOutOfMemory = 6;
-
-    namespace Vst {
-        // Forward declarations of structures needed for implementation
-        struct ProcessData {
-            int32 numSamples = 0;
-            int32 numInputs = 0;
-            int32 numOutputs = 0;
-            struct AudioBusBuffers {
-                int32 numChannels = 0;
-                Sample32** channelBuffers32 = nullptr;
-                int32 silenceFlags = 0;
-            };
-            AudioBusBuffers* inputs = nullptr;
-            AudioBusBuffers* outputs = nullptr;
-            IParameterChanges* inputParameterChanges = nullptr;
-            IParameterChanges* outputParameterChanges = nullptr;
-            void* inputEvents = nullptr;
-            void* outputEvents = nullptr;
-            void* processContext = nullptr;
-        };
-    }
-}
+#include "base/source/fstreamer.h"
+#include "pluginterfaces/vst/ivstparameterchanges.h"
 
 namespace GranularPlunderphonics {
 
-//------------------------------------------------------------------------
-// Constructor and destructor
-//------------------------------------------------------------------------
 GranularPlunderphonicsProcessor::GranularPlunderphonicsProcessor()
-: mBypass(false)
+: AudioEffect()
+, mBypass(false)
 , mSampleRate(44100.0f)
 , mBlockSize(1024)
 , mLogger("GranularPlunderphonicsProcessor")
-, mErrorHandler()
 {
     mLogger.info("Creating GranularPlunderphonicsProcessor instance");
+    setControllerClass(GranularPlunderphonicsControllerUID);
 }
 
-//------------------------------------------------------------------------
-GranularPlunderphonicsProcessor::~GranularPlunderphonicsProcessor()
+Steinberg::tresult PLUGIN_API GranularPlunderphonicsProcessor::initialize(FUnknown* context)
 {
-    mLogger.info("Destroying GranularPlunderphonicsProcessor instance");
-    // Resources are automatically cleaned up thanks to RAII
+    mLogger.info("Initializing processor");
+
+    // First initialize parent class
+    Steinberg::tresult result = AudioEffect::initialize(context);
+    if (result != Steinberg::kResultOk) {
+        mLogger.error("Parent initialization failed");
+        return result;
+    }
+
+    // Set bus arrangements (1 mono input, 1 stereo output)
+    addAudioInput(STR16("Audio Input"), Steinberg::Vst::SpeakerArr::kMono);
+    addAudioOutput(STR16("Audio Output"), Steinberg::Vst::SpeakerArr::kStereo);
+
+    return Steinberg::kResultOk;
 }
 
-//------------------------------------------------------------------------
-// AudioEffect interface stubs
-//------------------------------------------------------------------------
-::Steinberg::tresult GranularPlunderphonicsProcessor::initialize(::Steinberg::FUnknown* context)
+Steinberg::tresult PLUGIN_API GranularPlunderphonicsProcessor::terminate()
 {
-    mLogger.info("Initializing GranularPlunderphonicsProcessor");
-    return ::Steinberg::kResultOk;
+    mLogger.info("Terminating processor");
+    return AudioEffect::terminate();
 }
 
-//------------------------------------------------------------------------
-::Steinberg::tresult GranularPlunderphonicsProcessor::setActive(::Steinberg::TBool state)
+Steinberg::tresult PLUGIN_API GranularPlunderphonicsProcessor::setActive(Steinberg::TBool state)
 {
     mLogger.info("Setting processor active state: {}", state ? "active" : "inactive");
-    return ::Steinberg::kResultOk;
+    return AudioEffect::setActive(state);
 }
 
-//------------------------------------------------------------------------
-::Steinberg::tresult GranularPlunderphonicsProcessor::terminate()
+Steinberg::tresult PLUGIN_API GranularPlunderphonicsProcessor::process(Steinberg::Vst::ProcessData& data)
 {
-    mLogger.info("Terminating GranularPlunderphonicsProcessor");
-    return ::Steinberg::kResultOk;
+    // Handle parameter changes
+    if (data.inputParameterChanges) {
+        processParameterChanges(data.inputParameterChanges);
+    }
+
+    // Check if processing is needed
+    if (data.numInputs == 0 || data.numOutputs == 0) {
+        return Steinberg::kResultOk;
+    }
+
+    // Process audio
+    return processMonoToStereo(data);
 }
 
-//------------------------------------------------------------------------
-::Steinberg::tresult GranularPlunderphonicsProcessor::process(::Steinberg::Vst::ProcessData& data)
+Steinberg::tresult PLUGIN_API GranularPlunderphonicsProcessor::setupProcessing(Steinberg::Vst::ProcessSetup& setup)
 {
-    // This is a stub implementation
-    mLogger.debug("Processing audio block");
-    return ::Steinberg::kResultOk;
+    mLogger.info("Setting up processing: SR={}, MaxBS={}", setup.sampleRate, setup.maxSamplesPerBlock);
+    mSampleRate = setup.sampleRate;
+    mBlockSize = setup.maxSamplesPerBlock;
+    return AudioEffect::setupProcessing(setup);
 }
 
-//------------------------------------------------------------------------
-::Steinberg::tresult GranularPlunderphonicsProcessor::setState(::Steinberg::IBStream* state)
+Steinberg::tresult PLUGIN_API GranularPlunderphonicsProcessor::setBusArrangements(
+    Steinberg::Vst::SpeakerArrangement* inputs, Steinberg::int32 numIns,
+    Steinberg::Vst::SpeakerArrangement* outputs, Steinberg::int32 numOuts)
 {
-    mLogger.debug("Setting processor state");
-    return ::Steinberg::kResultOk;
+    // Validate bus configuration
+    if (numIns == 1 && numOuts == 1 &&
+        inputs[0] == Steinberg::Vst::SpeakerArr::kMono &&
+        outputs[0] == Steinberg::Vst::SpeakerArr::kStereo) {
+        return AudioEffect::setBusArrangements(inputs, numIns, outputs, numOuts);
+    }
+    return Steinberg::kResultFalse;
 }
 
-//------------------------------------------------------------------------
-::Steinberg::tresult GranularPlunderphonicsProcessor::getState(::Steinberg::IBStream* state)
+Steinberg::tresult GranularPlunderphonicsProcessor::processMonoToStereo(Steinberg::Vst::ProcessData& data)
 {
-    mLogger.debug("Getting processor state");
-    return ::Steinberg::kResultOk;
+    // Get input and output buffers
+    Steinberg::Vst::AudioBusBuffers& inputBus = data.inputs[0];
+    Steinberg::Vst::AudioBusBuffers& outputBus = data.outputs[0];
+
+    // Get the actual buffers
+    float* inBuffer = inputBus.channelBuffers32[0];
+    float* outLeftBuffer = outputBus.channelBuffers32[0];
+    float* outRightBuffer = outputBus.channelBuffers32[1];
+
+    // Simple mono to stereo pass-through
+    for (int32 i = 0; i < data.numSamples; i++) {
+        if (mBypass) {
+            outLeftBuffer[i] = outRightBuffer[i] = inBuffer[i];
+        } else {
+            // For now, just copy input to both channels
+            // Later we'll add granular processing here
+            outLeftBuffer[i] = inBuffer[i];
+            outRightBuffer[i] = inBuffer[i];
+        }
+    }
+
+    return Steinberg::kResultOk;
 }
 
-//------------------------------------------------------------------------
-::Steinberg::tresult GranularPlunderphonicsProcessor::setBusArrangements(
-    ::Steinberg::Vst::SpeakerArrangement* inputs, ::Steinberg::int32 numIns,
-    ::Steinberg::Vst::SpeakerArrangement* outputs, ::Steinberg::int32 numOuts)
+void GranularPlunderphonicsProcessor::processParameterChanges(Steinberg::Vst::IParameterChanges* paramChanges)
 {
-    mLogger.debug("Setting bus arrangements");
-    return ::Steinberg::kResultOk;
-}
-
-//------------------------------------------------------------------------
-::Steinberg::FUnknown* GranularPlunderphonicsProcessor::createInstance(void* /*context*/)
-{
-    // This is a placeholder - will be properly implemented when SDK is available
-    return nullptr;
-}
-
-//------------------------------------------------------------------------
-// Custom methods
-//------------------------------------------------------------------------
-::Steinberg::tresult GranularPlunderphonicsProcessor::processMonoToStereo(
-    ::Steinberg::Vst::ProcessData& data,
-    const ::Steinberg::Vst::Sample32* inBuffer,
-    ::Steinberg::Vst::Sample32* outLeftBuffer,
-    ::Steinberg::Vst::Sample32* outRightBuffer)
-{
-    // This is a stub implementation
-    mLogger.debug("Processing mono to stereo");
-    return ::Steinberg::kResultOk;
-}
-
-//------------------------------------------------------------------------
-void GranularPlunderphonicsProcessor::processParameterChanges(::Steinberg::Vst::IParameterChanges* paramChanges)
-{
-    // This is a stub implementation
-    mLogger.debug("Processing parameter changes");
+    // Process bypass parameter changes
+    int32 numParamsChanged = paramChanges->getParameterCount();
+    for (int32 i = 0; i < numParamsChanged; i++) {
+        Steinberg::Vst::IParamValueQueue* paramQueue = paramChanges->getParameterData(i);
+        if (paramQueue) {
+            Steinberg::Vst::ParamValue value;
+            int32 sampleOffset;
+            int32 numPoints = paramQueue->getPointCount();
+            if (numPoints > 0) {
+                paramQueue->getPoint(numPoints - 1, sampleOffset, value);
+                switch (paramQueue->getParameterId()) {
+                    case kBypassId:
+                        mBypass = (value >= 0.5f);
+                        break;
+                    // Add more parameter cases here as needed
+                }
+            }
+        }
+    }
 }
 
 } // namespace GranularPlunderphonics

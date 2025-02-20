@@ -21,19 +21,32 @@ set(VST3_OUTPUT_DIR ${CMAKE_BINARY_DIR}/VST3)
 find_package(spdlog REQUIRED)
 
 # VST3 SDK setup
-# Option 1: If VST3 SDK is in the project as a submodule
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/vst3sdk/CMakeLists.txt)
-    add_subdirectory(vst3sdk)
-else()
-    # Option 2: VST3 SDK is installed externally
-    # You need to specify the path to VST3 SDK
-    # set(VST3_SDK_ROOT "path/to/vst3sdk" CACHE PATH "Path to VST3 SDK")
-    # include("${VST3_SDK_ROOT}/CMakeLists.txt")
-    message(FATAL_ERROR "VST3 SDK not found. Please add it as a submodule or specify VST3_SDK_ROOT.")
+set(VST3_SDK_ROOT "/Users/raydiator/CLionProjects/GranularPlunderphonics/vst3sdk")
+if(NOT EXISTS "${VST3_SDK_ROOT}/CMakeLists.txt")
+    message(FATAL_ERROR "VST3 SDK not found at ${VST3_SDK_ROOT}")
 endif()
 
-# Include VST3 SDK setup (after adding the sdk subdirectory)
-include(vst3sdk/cmake/modules/SMTG_VST3_SDK.cmake)
+# Add VST3 SDK cmake modules path
+list(APPEND CMAKE_MODULE_PATH
+        "${VST3_SDK_ROOT}/cmake/modules"
+)
+
+# Include VST3 SDK modules
+include(SMTG_Global)
+include(SMTG_AddVST3Library)
+include(SMTG_Bundle)
+include(SMTG_ExportedSymbols)
+include(SMTG_PrefixHeader)
+include(SMTG_PlatformIOS)
+include(SMTG_PlatformToolset)
+include(SMTG_CoreAudioSupport)
+include(SMTG_AAXSupport)
+include(SMTG_VstGuiSupport)
+include(SMTG_UniversalBinary)
+include(SMTG_AddVST3Options)
+
+# Add VST3 SDK as subdirectory
+add_subdirectory(${VST3_SDK_ROOT})
 
 # Enable testing
 enable_testing()
@@ -41,26 +54,6 @@ enable_testing()
 # Add subdirectories
 add_subdirectory(src)
 add_subdirectory(test)
-
-# Installation rules
-smtg_create_vst3_bundle(GranularPlunderphonics
-        PACKAGE_NAME "GranularPlunderphonics"
-        PACKAGE_VENDOR "YourCompany"
-        PACKAGE_VERSION "${PROJECT_VERSION}"
-        PACKAGE_EMAIL "your.email@example.com"
-)
-
-# Install VST3 plugin to standard locations
-smtg_install_vst3plugin(GranularPlunderphonics
-        DESTINATION ${VST3_OUTPUT_DIR}
-)
-
-# Add custom target for running tests
-add_custom_target(run_tests
-        COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-        DEPENDS GranularPlunderphonicsTests
-        COMMENT "Running tests..."
-)
 
 # Print configuration summary
 message(STATUS "Configuration Summary:")
