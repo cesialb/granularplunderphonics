@@ -17,12 +17,13 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(VST3_OUTPUT_DIR ${CMAKE_BINARY_DIR}/VST3)
 
+# Include directories for homebrew dependencies
 include_directories(SYSTEM "/opt/homebrew/include")
 
 # Find dependencies (only need to find spdlog once)
 find_package(spdlog REQUIRED)
 
-# VST3 SDK setup
+# VST3 SDK setup with your specific path
 set(VST3_SDK_ROOT "/Users/raydiator/CLionProjects/GranularPlunderphonics/vst3sdk")
 if(NOT EXISTS "${VST3_SDK_ROOT}/CMakeLists.txt")
     message(FATAL_ERROR "VST3 SDK not found at ${VST3_SDK_ROOT}")
