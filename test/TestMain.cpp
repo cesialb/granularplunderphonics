@@ -15,6 +15,7 @@ namespace GranularPlunderphonics {
     namespace Tests {
         // Each test file will declare its test functions here
         void runProcessorTests();
+        void registerParameterTests();
     }
 }
 
@@ -82,6 +83,11 @@ private:
 #define REGISTER_TEST(name, func) \
     static bool registered_##func = (TestFramework::getInstance().registerTest(name, func), true)
 
+// Helper function for test registration
+void registerTest(const std::string& name, std::function<void()> testFunc) {
+    TestFramework::getInstance().registerTest(name, testFunc);
+}
+
 // Main entry point
 int main(int argc, char* argv[]) {
     try {
@@ -92,6 +98,7 @@ int main(int argc, char* argv[]) {
 
         // Register all tests (will be replaced by Catch2 auto-discovery)
         GranularPlunderphonics::Tests::runProcessorTests();
+        GranularPlunderphonics::Tests::registerParameterTests();
 
         // Run all tests
         bool allPassed = TestFramework::getInstance().runAllTests();

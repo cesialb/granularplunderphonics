@@ -11,10 +11,14 @@
 #include <memory>
 #include <cmath>
 #include <stdexcept>
+#include <functional>
 #include "../src/common/Logger.h"
 
 namespace GranularPlunderphonics {
 namespace Tests {
+
+// Forward declaration for registerTest
+extern void registerTest(const std::string& name, std::function<void()> testFunc);
 
 // Simple assertion helper
 void checkCondition(bool condition, const std::string& message) {
@@ -85,10 +89,7 @@ void testResourceCleanup() {
 }
 
 // Function to register all processor tests with the test framework
-extern void runProcessorTests();  // Forward declaration for linking
 void runProcessorTests() {
-    extern void registerTest(const std::string& name, std::function<void()> testFunc);
-
     // Register all processor tests
     registerTest("Processor_Creation", testProcessorCreation);
     registerTest("Processor_Initialization", testProcessorInitialization);

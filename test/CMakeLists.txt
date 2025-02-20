@@ -3,6 +3,7 @@ find_package(Catch2 REQUIRED)
 
 set(TEST_SOURCES
         ProcessorTests.cpp
+        ParameterTests.cpp
         TestMain.cpp
 )
 

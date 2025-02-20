@@ -76,7 +76,7 @@ public:
      * @param args Format arguments (not used in this implementation)
      */
     template<typename... Args>
-    void trace(const char* msg, const Args&... args) {
+    void trace(const char* msg, const Args&... args) const {
         logMessage(Level::Trace, msg);
     }
 
@@ -86,7 +86,7 @@ public:
      * @param args Format arguments (not used in this implementation)
      */
     template<typename... Args>
-    void debug(const char* msg, const Args&... args) {
+    void debug(const char* msg, const Args&... args) const {
         logMessage(Level::Debug, msg);
     }
 
@@ -96,7 +96,7 @@ public:
      * @param args Format arguments (not used in this implementation)
      */
     template<typename... Args>
-    void info(const char* msg, const Args&... args) {
+    void info(const char* msg, const Args&... args) const {
         logMessage(Level::Info, msg);
     }
 
@@ -106,7 +106,7 @@ public:
      * @param args Format arguments (not used in this implementation)
      */
     template<typename... Args>
-    void warn(const char* msg, const Args&... args) {
+    void warn(const char* msg, const Args&... args) const {
         logMessage(Level::Warning, msg);
     }
 
@@ -116,7 +116,7 @@ public:
      * @param args Format arguments (not used in this implementation)
      */
     template<typename... Args>
-    void error(const char* msg, const Args&... args) {
+    void error(const char* msg, const Args&... args) const {
         logMessage(Level::Error, msg);
     }
 
@@ -126,8 +126,17 @@ public:
      * @param args Format arguments (not used in this implementation)
      */
     template<typename... Args>
-    void critical(const char* msg, const Args&... args) {
+    void critical(const char* msg, const Args&... args) const {
         logMessage(Level::Critical, msg);
+    }
+
+    // Non-template overloads for simple string messages
+    void info(const char* msg) const {
+        logMessage(Level::Info, msg);
+    }
+
+    void error(const char* msg) const {
+        logMessage(Level::Error, msg);
     }
 
 private:
@@ -136,7 +145,7 @@ private:
      * @param level The log level
      * @param msg The message to log
      */
-    void logMessage(Level level, const char* msg);
+    void logMessage(Level level, const char* msg) const;
 
     /**
      * @brief Convert a log level to a string
