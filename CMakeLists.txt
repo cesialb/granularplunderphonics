@@ -17,7 +17,9 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(VST3_OUTPUT_DIR ${CMAKE_BINARY_DIR}/VST3)
 
-# Find dependencies
+include_directories(SYSTEM "/opt/homebrew/include")
+
+# Find dependencies (only need to find spdlog once)
 find_package(spdlog REQUIRED)
 
 # VST3 SDK setup
