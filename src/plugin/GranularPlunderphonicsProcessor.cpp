@@ -20,30 +20,30 @@ GranularPlunderphonicsProcessor::GranularPlunderphonicsProcessor()
 }
 
 //------------------------------------------------------------------------
-::Steinberg::tresult PLUGIN_API GranularPlunderphonicsProcessor::initialize(::Steinberg::FUnknown* context)
+Steinberg::tresult PLUGIN_API GranularPlunderphonicsProcessor::initialize(::Steinberg::FUnknown* context)
 {
     mLogger.info("Initializing processor");
-    return ::Steinberg::kResultOk;
+    return Steinberg::kResultOk;
 }
 
 //------------------------------------------------------------------------
-::Steinberg::tresult PLUGIN_API GranularPlunderphonicsProcessor::terminate()
+Steinberg::tresult PLUGIN_API GranularPlunderphonicsProcessor::terminate()
 {
     mLogger.info("Terminating processor");
-    return ::Steinberg::kResultOk;
+    return Steinberg::kResultOk;
 }
 
 //------------------------------------------------------------------------
-::Steinberg::tresult PLUGIN_API GranularPlunderphonicsProcessor::setActive(::Steinberg::TBool state)
+Steinberg::tresult PLUGIN_API GranularPlunderphonicsProcessor::setActive(::Steinberg::TBool state)
 {
     std::string message = "Plugin ";
     message += state ? "activated" : "deactivated";
     mLogger.info(message.c_str());
-    return ::Steinberg::kResultOk;
+    return Steinberg::kResultOk;
 }
 
 //------------------------------------------------------------------------
-::Steinberg::tresult PLUGIN_API GranularPlunderphonicsProcessor::process(::Steinberg::Vst::ProcessData& data)
+Steinberg::tresult PLUGIN_API GranularPlunderphonicsProcessor::process(::Steinberg::Vst::ProcessData& data)
 {
     // Process parameter changes
     if (data.inputParameterChanges) {
@@ -52,24 +52,24 @@ GranularPlunderphonicsProcessor::GranularPlunderphonicsProcessor()
 
     // Skip processing if there's no audio data or if bypassed
     if (!data.numSamples || mBypass) {
-        return ::Steinberg::kResultOk;
+        return Steinberg::kResultOk;
     }
 
     // Get audio buffers
     if (data.numInputs <= 0 || data.numOutputs <= 0) {
-        return ::Steinberg::kResultOk;
+        return Steinberg::kResultOk;
     }
 
     // Get input buffer
     ::Steinberg::Vst::AudioBusBuffers& inputBus = data.inputs[0];
     if (inputBus.numChannels <= 0) {
-        return ::Steinberg::kResultOk;
+        return Steinberg::kResultOk;
     }
 
     // Get output buffer
     ::Steinberg::Vst::AudioBusBuffers& outputBus = data.outputs[0];
     if (outputBus.numChannels <= 0) {
-        return ::Steinberg::kResultOk;
+        return Steinberg::kResultOk;
     }
 
     // Simple mono to stereo passthrough
@@ -79,7 +79,7 @@ GranularPlunderphonicsProcessor::GranularPlunderphonicsProcessor()
         float* outRightChannel = outputBus.channelBuffers32[1];
 
         // Copy input to both output channels
-        for (::Steinberg::int32 i = 0; i < data.numSamples; i++) {
+        for (int i = 0; i < data.numSamples; i++) {
             outLeftChannel[i] = inputChannel[i];
             outRightChannel[i] = inputChannel[i];
         }
@@ -92,17 +92,17 @@ GranularPlunderphonicsProcessor::GranularPlunderphonicsProcessor()
         float* outRightChannel = outputBus.channelBuffers32[1];
 
         // Copy input to output
-        for (::Steinberg::int32 i = 0; i < data.numSamples; i++) {
+        for (int i = 0; i < data.numSamples; i++) {
             outLeftChannel[i] = inLeftChannel[i];
             outRightChannel[i] = inRightChannel[i];
         }
     }
 
-    return ::Steinberg::kResultOk;
+    return Steinberg::kResultOk;
 }
 
 //------------------------------------------------------------------------
-::Steinberg::tresult PLUGIN_API GranularPlunderphonicsProcessor::setupProcessing(::Steinberg::Vst::ProcessSetup& setup)
+Steinberg::tresult PLUGIN_API GranularPlunderphonicsProcessor::setupProcessing(::Steinberg::Vst::ProcessSetup& setup)
 {
     std::string setupMessage = "Setting up processing: sampleRate=" +
                               std::to_string(setup.sampleRate) +
@@ -114,30 +114,28 @@ GranularPlunderphonicsProcessor::GranularPlunderphonicsProcessor()
     mSampleRate = setup.sampleRate;
     mBlockSize = setup.maxSamplesPerBlock;
 
-    return ::Steinberg::kResultOk;
+    return Steinberg::kResultOk;
 }
 
 //------------------------------------------------------------------------
-::Steinberg::tresult PLUGIN_API GranularPlunderphonicsProcessor::setBusArrangements(
+Steinberg::tresult PLUGIN_API GranularPlunderphonicsProcessor::setBusArrangements(
     ::Steinberg::Vst::SpeakerArrangement* inputs, ::Steinberg::int32 numIns,
     ::Steinberg::Vst::SpeakerArrangement* outputs, ::Steinberg::int32 numOuts)
 {
     // Accept mono input to stereo output
-    if (numIns == 1 && numOuts == 1 &&
-        inputs[0] == ::Steinberg::Vst::SpeakerArr::kMono &&
-        outputs[0] == ::Steinberg::Vst::SpeakerArr::kStereo) {
-        return ::Steinberg::kResultOk;
+    // Using hardcoded values to avoid any symbol resolution issues
+    // 0x01 = Mono (Center), 0x03 = Stereo (L+R)
+    if (numIns == 1 && numOuts == 1 && inputs[0] == 0x01 && outputs[0] == 0x03) {
+        return Steinberg::kResultOk;
     }
 
     // Accept stereo input to stereo output
-    if (numIns == 1 && numOuts == 1 &&
-        inputs[0] == ::Steinberg::Vst::SpeakerArr::kStereo &&
-        outputs[0] == ::Steinberg::Vst::SpeakerArr::kStereo) {
-        return ::Steinberg::kResultOk;
+    if (numIns == 1 && numOuts == 1 && inputs[0] == 0x03 && outputs[0] == 0x03) {
+        return Steinberg::kResultOk;
     }
 
     // Any other configuration is not supported
-    return ::Steinberg::kResultFalse;
+    return Steinberg::kResultFalse;
 }
 
 //------------------------------------------------------------------------
@@ -148,28 +146,28 @@ void GranularPlunderphonicsProcessor::processParameterChanges(::Steinberg::Vst::
     }
 
     // Get parameter count
-    ::Steinberg::int32 numParamsChanged = paramChanges->getParameterCount();
+    int numParamsChanged = paramChanges->getParameterCount();
 
     // For each parameter change
-    for (::Steinberg::int32 i = 0; i < numParamsChanged; i++) {
+    for (int i = 0; i < numParamsChanged; i++) {
         ::Steinberg::Vst::IParamValueQueue* paramQueue = paramChanges->getParameterData(i);
         if (!paramQueue) {
             continue;
         }
 
         // Get parameter ID
-        ::Steinberg::Vst::ParamID paramId = paramQueue->getParameterId();
+        int paramId = paramQueue->getParameterId();
 
         // Get last point value (most recent change)
-        ::Steinberg::int32 pointCount = paramQueue->getPointCount();
+        int pointCount = paramQueue->getPointCount();
         if (pointCount <= 0) {
             continue;
         }
 
-        ::Steinberg::Vst::ParamValue value;
-        ::Steinberg::int32 sampleOffset;
+        double value;
+        int sampleOffset;
 
-        if (paramQueue->getPoint(pointCount - 1, sampleOffset, value) == ::Steinberg::kResultOk) {
+        if (paramQueue->getPoint(pointCount - 1, sampleOffset, value) == 0) { // 0 is kResultOk
             // Set parameter value using string concatenation
             std::string logMessage = "Parameter change: ID=" + std::to_string(paramId) +
                                    ", value=" + std::to_string(value);
