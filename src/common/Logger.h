@@ -5,17 +5,18 @@
 
 #pragma once
 
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/rotating_file_sink.h>
-#include <spdlog/fmt/ostr.h>
-#include <memory>
 #include <string>
+#include <memory>
+#include <vector>
+#include <iostream>
+#include <fstream>
+#include <mutex>
 
 namespace GranularPlunderphonics {
 
 /**
  * @class Logger
- * @brief Wrapper around spdlog for consistent logging throughout the plugin
+ * @brief Simple logging implementation that will be replaced with spdlog when available
  *
  * This class provides a simple interface for logging with different levels
  * and ensures consistent configuration across all plugin components.
@@ -55,8 +56,8 @@ public:
     /**
      * @brief Initialize the logging system
      * @param logFilePath Path to the log file
-     * @param maxFileSize Maximum size of each log file in bytes
-     * @param maxFiles Maximum number of rotating log files
+     * @param maxFileSize Maximum size of each log file in bytes (not used in this implementation)
+     * @param maxFiles Maximum number of rotating log files (not used in this implementation)
      * @return true if initialization succeeded, false otherwise
      */
     static bool initialize(
@@ -71,86 +72,85 @@ public:
 
     /**
      * @brief Log a trace message
-     * @tparam Args Variadic template for format arguments
-     * @param fmt Format string
-     * @param args Format arguments
+     * @param msg The message to log
+     * @param args Format arguments (not used in this implementation)
      */
     template<typename... Args>
-    void trace(const char* fmt, const Args&... args) {
-        if (mLogger) {
-            mLogger->trace(fmt, args...);
-        }
+    void trace(const char* msg, const Args&... args) {
+        logMessage(Level::Trace, msg);
     }
 
     /**
      * @brief Log a debug message
-     * @tparam Args Variadic template for format arguments
-     * @param fmt Format string
-     * @param args Format arguments
+     * @param msg The message to log
+     * @param args Format arguments (not used in this implementation)
      */
     template<typename... Args>
-    void debug(const char* fmt, const Args&... args) {
-        if (mLogger) {
-            mLogger->debug(fmt, args...);
-        }
+    void debug(const char* msg, const Args&... args) {
+        logMessage(Level::Debug, msg);
     }
 
     /**
      * @brief Log an info message
-     * @tparam Args Variadic template for format arguments
-     * @param fmt Format string
-     * @param args Format arguments
+     * @param msg The message to log
+     * @param args Format arguments (not used in this implementation)
      */
     template<typename... Args>
-    void info(const char* fmt, const Args&... args) {
-        if (mLogger) {
-            mLogger->info(fmt, args...);
-        }
+    void info(const char* msg, const Args&... args) {
+        logMessage(Level::Info, msg);
     }
 
     /**
      * @brief Log a warning message
-     * @tparam Args Variadic template for format arguments
-     * @param fmt Format string
-     * @param args Format arguments
+     * @param msg The message to log
+     * @param args Format arguments (not used in this implementation)
      */
     template<typename... Args>
-    void warn(const char* fmt, const Args&... args) {
-        if (mLogger) {
-            mLogger->warn(fmt, args...);
-        }
+    void warn(const char* msg, const Args&... args) {
+        logMessage(Level::Warning, msg);
     }
 
     /**
      * @brief Log an error message
-     * @tparam Args Variadic template for format arguments
-     * @param fmt Format string
-     * @param args Format arguments
+     * @param msg The message to log
+     * @param args Format arguments (not used in this implementation)
      */
     template<typename... Args>
-    void error(const char* fmt, const Args&... args) {
-        if (mLogger) {
-            mLogger->error(fmt, args...);
-        }
+    void error(const char* msg, const Args&... args) {
+        logMessage(Level::Error, msg);
     }
 
     /**
      * @brief Log a critical message
-     * @tparam Args Variadic template for format arguments
-     * @param fmt Format string
-     * @param args Format arguments
+     * @param msg The message to log
+     * @param args Format arguments (not used in this implementation)
      */
     template<typename... Args>
-    void critical(const char* fmt, const Args&... args) {
-        if (mLogger) {
-            mLogger->critical(fmt, args...);
-        }
+    void critical(const char* msg, const Args&... args) {
+        logMessage(Level::Critical, msg);
     }
 
 private:
-    std::shared_ptr<spdlog::logger> mLogger;             // Logger instance
-    static std::shared_ptr<spdlog::logger> sMainLogger;  // Main logger for the application
-    static bool sInitialized;                           // Flag to track initialization
+    /**
+     * @brief Log a message with the specified level
+     * @param level The log level
+     * @param msg The message to log
+     */
+    void logMessage(Level level, const char* msg);
+
+    /**
+     * @brief Convert a log level to a string
+     * @param level The log level
+     * @return String representation of the log level
+     */
+    static const char* levelToString(Level level);
+
+    std::string mName;                      // Logger name
+    static Level sGlobalLevel;              // Global log level
+    static std::string sLogFilePath;        // Path to log file
+    static std::ofstream sLogFile;          // Log file stream
+    static bool sInitialized;               // Initialization flag
+    static std::mutex sLogMutex;            // Mutex for thread safety
 };
 
 } // namespace GranularPlunderphonics

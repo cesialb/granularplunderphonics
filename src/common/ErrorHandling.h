@@ -5,12 +5,35 @@
 
 #pragma once
 
-#include "GranularPlunderphonicsIDs.h"
 #include <string>
 #include <exception>
 #include <stdexcept>
 
 namespace GranularPlunderphonics {
+
+// Forward declare error codes here until we have the VST3 SDK
+namespace ErrorCodes {
+    enum ErrorCode {
+        kNoError = 0,
+        kInitializationError = -1000,
+        kProcessingError = -1001,
+        kMemoryError = -1002,
+        kInvalidParameter = -1003,
+        // Add more error codes as needed
+    };
+}
+
+// Forward declaration for Steinberg types used when the SDK is available
+namespace Steinberg {
+    typedef int tresult;
+    const tresult kResultOk = 0;
+    const tresult kResultFalse = 1;
+    const tresult kInvalidArgument = 2;
+    const tresult kNotImplemented = 3;
+    const tresult kInternalError = 4;
+    const tresult kNotInitialized = 5;
+    const tresult kOutOfMemory = 6;
+}
 
 /**
  * @class GranularPlunderphonicsException

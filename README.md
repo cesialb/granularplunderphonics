@@ -19,9 +19,32 @@ This VST3 plugin provides a framework for granular audio processing, specificall
 
 - C++17 compatible compiler
 - CMake 3.15 or higher
-- VST3 SDK
-- spdlog library
+- VST3 SDK (must be installed/downloaded separately)
 - Catch2 (for testing)
+
+### External Dependencies
+
+The project is designed to work with minimal external dependencies initially. When you're ready for the full feature set:
+
+1. **spdlog** - A fast C++ logging library
+    - The project includes a simple logging implementation that will be replaced with spdlog
+    - Install using your package manager or from [https://github.com/gabime/spdlog](https://github.com/gabime/spdlog)
+
+2. **Catch2** - A modern C++ test framework
+    - Install using your package manager or from [https://github.com/catchorg/Catch2](https://github.com/catchorg/Catch2)
+
+### VST3 SDK Installation
+
+Before building this project, you'll need to download the VST3 SDK:
+
+1. Download the latest VST3 SDK from [Steinberg's Developer Portal](https://developer.steinberg.help/display/VST/VST+3+SDK)
+2. Extract it to a suitable location on your machine
+3. When configuring the project, set the `VST3_SDK_ROOT` CMake variable to point to your VST3 SDK location
+
+```bash
+# Example: Setting the VST3 SDK path during CMake configuration
+cmake .. -DVST3_SDK_ROOT=/path/to/vst3sdk
+```
 
 ## Building with CLion
 

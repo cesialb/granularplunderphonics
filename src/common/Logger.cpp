@@ -4,35 +4,26 @@
  */
 
 #include "Logger.h"
-#include <spdlog/async.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
+#include <ctime>
+#include <iomanip>
 #include <filesystem>
 
 namespace GranularPlunderphonics {
 
-// Static member initialization
-std::shared_ptr<spdlog::logger> Logger::sMainLogger = nullptr;
+// Initialize static members
+Logger::Level Logger::sGlobalLevel = Logger::Level::Info;
+std::string Logger::sLogFilePath = "GranularPlunderphonics.log";
+std::ofstream Logger::sLogFile;
 bool Logger::sInitialized = false;
+std::mutex Logger::sLogMutex;
 
 //------------------------------------------------------------------------
 Logger::Logger(const std::string& name)
+    : mName(name)
 {
     if (!sInitialized) {
         // Try to initialize with default settings if not already initialized
         initialize();
-    }
-
-    // Get or create a logger with the given name
-    mLogger = spdlog::get(name);
-    if (!mLogger) {
-        if (sMainLogger) {
-            // Use the same sinks as the main logger
-            mLogger = std::make_shared<spdlog::logger>(name, sMainLogger->sinks().begin(), sMainLogger->sinks().end());
-            spdlog::register_logger(mLogger);
-        } else {
-            // Fallback to console-only logger if main logger not available
-            mLogger = spdlog::stdout_color_mt(name);
-        }
     }
 }
 
@@ -44,6 +35,11 @@ bool Logger::initialize(const std::string& logFilePath, size_t maxFileSize, size
     }
 
     try {
+        std::lock_guard<std::mutex> lock(sLogMutex);
+
+        // Store the log file path
+        sLogFilePath = logFilePath;
+
         // Create log directory if it doesn't exist
         std::filesystem::path logPath(logFilePath);
         std::filesystem::path logDir = logPath.parent_path();
@@ -51,74 +47,116 @@ bool Logger::initialize(const std::string& logFilePath, size_t maxFileSize, size
             std::filesystem::create_directories(logDir);
         }
 
-        // Initialize async logging
-        spdlog::init_thread_pool(8192, 1);  // Queue size, thread count
-
-        // Create sinks
-        auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-        auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-            logFilePath, maxFileSize, maxFiles);
-
-        // Set log format
-        std::string pattern = "[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] %v";
-        console_sink->set_pattern(pattern);
-        file_sink->set_pattern(pattern);
-
-        // Create and register main logger with multiple sinks
-        sMainLogger = std::make_shared<spdlog::logger>(
-            "GranularPlunderphonics", spdlog::sinks_init_list({console_sink, file_sink}));
-
-        // Set default log level
-        sMainLogger->set_level(spdlog::level::debug);
-
-        // Register as default logger
-        spdlog::register_logger(sMainLogger);
-        spdlog::set_default_logger(sMainLogger);
-
-        // Enable async mode
-        spdlog::set_async_mode(8192);
+        // Open the log file
+        sLogFile.open(logFilePath, std::ios::out | std::ios::app);
+        if (!sLogFile.is_open()) {
+            std::cerr << "Failed to open log file: " << logFilePath << std::endl;
+            return false;
+        }
 
         sInitialized = true;
-        sMainLogger->info("Logging system initialized");
+
+        // Log initialization message
+        Logger initLogger("LogSystem");
+        initLogger.info("Logging system initialized");
+
         return true;
-    } catch (const spdlog::spdlog_ex& ex) {
-        std::cerr << "Logger initialization failed: " << ex.what() << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Logger initialization failed: " << e.what() << std::endl;
         return false;
     }
 }
 
 //------------------------------------------------------------------------
-void Logger::setGlobalLevel(Level level)
+void Logger::setGlobalLevel(Logger::Level newLevel)
 {
-    spdlog::level::level_enum spdlogLevel;
+    std::lock_guard<std::mutex> lock(sLogMutex);
+    sGlobalLevel = newLevel;
 
-    switch (level) {
-        case Level::Trace:    spdlogLevel = spdlog::level::trace; break;
-        case Level::Debug:    spdlogLevel = spdlog::level::debug; break;
-        case Level::Info:     spdlogLevel = spdlog::level::info; break;
-        case Level::Warning:  spdlogLevel = spdlog::level::warn; break;
-        case Level::Error:    spdlogLevel = spdlog::level::err; break;
-        case Level::Critical: spdlogLevel = spdlog::level::critical; break;
-        case Level::Off:      spdlogLevel = spdlog::level::off; break;
-        default:              spdlogLevel = spdlog::level::info;
-    }
-
-    spdlog::set_level(spdlogLevel);
-
-    if (sMainLogger) {
-        sMainLogger->info("Log level set to {}", spdlog::level::to_string_view(spdlogLevel));
+    // Log level change if initialized
+    if (sInitialized) {
+        Logger levelLogger("LogSystem");
+        levelLogger.info("Log level set to %s", levelToString(newLevel));
     }
 }
 
 //------------------------------------------------------------------------
 void Logger::shutdown()
 {
+    std::lock_guard<std::mutex> lock(sLogMutex);
+
     if (sInitialized) {
-        if (sMainLogger) {
-            sMainLogger->info("Shutting down logging system");
+        if (sLogFile.is_open()) {
+            Logger shutdownLogger("LogSystem");
+            shutdownLogger.info("Shutting down logging system");
+            sLogFile.close();
         }
-        spdlog::shutdown();
         sInitialized = false;
+    }
+}
+
+//------------------------------------------------------------------------
+void Logger::logMessage(Logger::Level level, const char* msg)
+{
+    if (level < sGlobalLevel) {
+        return;  // Skip messages below the current log level
+    }
+
+    try {
+        std::lock_guard<std::mutex> lock(sLogMutex);
+
+        if (!sInitialized || !sLogFile.is_open()) {
+            return;
+        }
+
+        // Get current time
+        auto now = std::chrono::system_clock::now();
+        auto time = std::chrono::system_clock::to_time_t(now);
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            now.time_since_epoch()) % 1000;
+
+        // Format the log message
+        std::tm tm_buf;
+#ifdef _WIN32
+        localtime_s(&tm_buf, &time);
+#else
+        localtime_r(&time, &tm_buf);
+#endif
+
+        sLogFile << "["
+                 << std::put_time(&tm_buf, "%Y-%m-%d %H:%M:%S") << "."
+                 << std::setfill('0') << std::setw(3) << ms.count() << "] "
+                 << "[" << mName << "] "
+                 << "[" << levelToString(level) << "] "
+                 << msg << std::endl;
+
+        // Also print to console in debug builds
+#ifdef DEBUG_BUILD
+        std::cout << "["
+                 << std::put_time(&tm_buf, "%Y-%m-%d %H:%M:%S") << "."
+                 << std::setfill('0') << std::setw(3) << ms.count() << "] "
+                 << "[" << mName << "] "
+                 << "[" << levelToString(level) << "] "
+                 << msg << std::endl;
+#endif
+    } catch (const std::exception& e) {
+        // Last resort fallback
+        std::cerr << "Logging error: " << e.what() << std::endl;
+    }
+}
+
+//------------------------------------------------------------------------
+const char* Logger::levelToString(Logger::Level level)
+{
+    switch (level) {
+        case Logger::Level::Trace:    return "TRACE";
+        case Logger::Level::Debug:    return "DEBUG";
+        case Logger::Level::Info:     return "INFO";
+        case Logger::Level::Warning:  return "WARNING";
+        case Logger::Level::Error:    return "ERROR";
+        case Logger::Level::Critical: return "CRITICAL";
+        case Logger::Level::Off:      return "OFF";
+        default:                      return "UNKNOWN";
     }
 }
 

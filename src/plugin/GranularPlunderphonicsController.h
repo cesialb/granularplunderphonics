@@ -5,49 +5,64 @@
 
 #pragma once
 
-#include "public.sdk/source/vst/vsteditcontroller.h"
-#include "common/Logger.h"
-#include "GranularPlunderphonicsIDs.h"
+#include <string>
+#include "../common/Logger.h"
 
+// Forward declarations for VST3 types until SDK is available
+namespace Steinberg {
+    typedef int tresult;
+    typedef const char* FIDString;
+    const tresult kResultOk = 0;
+    const tresult kResultFalse = 1;
+    const tresult kInvalidArgument = 2;
+
+    namespace Vst {
+        class EditControllerEx1;
+        class IEditController;
+        class IPlugView;
+    }
+
+    class FUnknown;
+    class IBStream;
+}
+
+// Plugin-specific forward declarations
 namespace GranularPlunderphonics {
 
-//------------------------------------------------------------------------
+// Forward declare error codes here
+enum GranularParameters {
+    kBypassId = 1000
+};
+
 /**
  * @class GranularPlunderphonicsController
  * @brief Controller implementation for the Granular Plunderphonics VST3 plugin
  *
- * This class handles parameter management and UI interaction.
- * Currently minimal, will be extended with UI controls for granular parameters.
+ * This is a placeholder declaration until the VST3 SDK is available.
+ * The actual implementation will inherit from Steinberg::Vst::EditControllerEx1.
  */
-class GranularPlunderphonicsController : public Steinberg::Vst::EditControllerEx1
+class GranularPlunderphonicsController
 {
 public:
     //------------------------------------------------------------------------
     // Constructor and destructor
     //------------------------------------------------------------------------
     GranularPlunderphonicsController();
-    ~GranularPlunderphonicsController() SMTG_OVERRIDE;
+    virtual ~GranularPlunderphonicsController();
 
     //------------------------------------------------------------------------
-    // EditController overrides
+    // EditController interface stubs (will be overridden when SDK available)
     //------------------------------------------------------------------------
-    /** Called at first after constructor */
-    Steinberg::tresult PLUGIN_API initialize(Steinberg::FUnknown* context) SMTG_OVERRIDE;
+    ::Steinberg::tresult initialize(::Steinberg::FUnknown* context);
+    ::Steinberg::tresult terminate();
+    ::Steinberg::tresult setComponentState(::Steinberg::IBStream* state);
+    ::Steinberg::Vst::IPlugView* createView(::Steinberg::FIDString name);
 
-    /** Called before destructor */
-    Steinberg::tresult PLUGIN_API terminate() SMTG_OVERRIDE;
-
-    /** For persistence */
-    Steinberg::tresult PLUGIN_API setComponentState(Steinberg::IBStream* state) SMTG_OVERRIDE;
-
-    /** Create custom view (editor) */
-    Steinberg::IPlugView* PLUGIN_API createView(Steinberg::FIDString name) SMTG_OVERRIDE;
-
-    /** Creation method called by the factory */
-    static Steinberg::FUnknown* createInstance(void* /*context*/)
-    {
-        return (Steinberg::Vst::IEditController*)new GranularPlunderphonicsController;
-    }
+    /**
+     * @brief Factory method to create instance
+     * This will be properly implemented when the SDK is available
+     */
+    static ::Steinberg::FUnknown* createInstance(void* context);
 
 protected:
     //------------------------------------------------------------------------

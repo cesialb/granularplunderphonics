@@ -1,6 +1,9 @@
 /**
 * @file GranularPlunderphonicsEntry.cpp
  * @brief Entry point for the GranularPlunderphonics VST3 plugin
+ *
+ * This is a placeholder that will be replaced with the actual VST3 factory
+ * implementation when the SDK is available.
  */
 
 #include "GranularPlunderphonicsProcessor.h"
@@ -8,41 +11,34 @@
 #include "GranularPlunderphonicsIDs.h"
 #include "version.h"
 
-#include "public.sdk/source/main/pluginfactory.h"
+#include <iostream>
 
-#define stringPluginName "Granular Plunderphonics"
+// When VST3 SDK is not available, this provides a simple placeholder
+namespace GranularPlunderphonics {
 
-using namespace Steinberg;
-using namespace Steinberg::Vst;
+    // Placeholder for VST3 Plugin factory
+    class PluginFactory {
+    public:
+        static void initialize() {
+            std::cout << "GranularPlunderphonics plugin factory initialized" << std::endl;
+            std::cout << "Plugin name: Granular Plunderphonics" << std::endl;
+            std::cout << "Version: " << GRANULAR_PLUNDERPHONICS_VERSION_STR << std::endl;
+            std::cout << "Vendor: " << kGranularPlunderphonicsVendor << std::endl;
+            std::cout << "This is a placeholder until VST3 SDK is available" << std::endl;
+        }
+    };
 
-//------------------------------------------------------------------------
-//  VST3 Plugin factory
-//------------------------------------------------------------------------
-BEGIN_FACTORY_DEF(kGranularPlunderphonicsVendor,
-                 kGranularPlunderphonicsURL,
-                 kGranularPlunderphonicsEmail)
+    // When this file is compiled as part of a real build with VST3 SDK,
+    // this code will be replaced with the actual factory implementation
+    void initializePlugin() {
+        PluginFactory::initialize();
+    }
 
-    //------------------------------------------------------------------------
-    // Register the GranularPlunderphonicsProcessor and GranularPlunderphonicsController
-    //------------------------------------------------------------------------
-    DEF_CLASS2(INLINE_UID_FROM_FUID(GranularPlunderphonics::kGranularPlunderphonicsProcessorUID),
-              PClassInfo::kManyInstances,
-              kVstAudioEffectClass,
-              stringPluginName,
-              Vst::kDistributable,
-              GranularPlunderphonics::kGranularPlunderphonicsCategory,
-              GRANULAR_PLUNDERPHONICS_VERSION_STR,
-              kVstVersionString,
-              GranularPlunderphonics::GranularPlunderphonicsProcessor::createInstance)
+}  // namespace GranularPlunderphonics
 
-    DEF_CLASS2(INLINE_UID_FROM_FUID(GranularPlunderphonics::kGranularPlunderphonicsControllerUID),
-              PClassInfo::kManyInstances,
-              kVstComponentControllerClass,
-              stringPluginName "Controller",
-              0,
-              "",
-              GRANULAR_PLUNDERPHONICS_VERSION_STR,
-              kVstVersionString,
-              GranularPlunderphonics::GranularPlunderphonicsController::createInstance)
-
-END_FACTORY
+// Simple entry point function that will be replaced by the VST3 SDK macros
+extern "C" {
+    void GranularPlunderphonicsEntry_Initialize() {
+        GranularPlunderphonics::initializePlugin();
+    }
+}
