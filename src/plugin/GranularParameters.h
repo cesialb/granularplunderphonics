@@ -66,7 +66,9 @@ public:
         // Grain density parameter (0.1-100Hz, default 10Hz, logarithmic)
         success &= paramManager.registerParameter(createGrainDensity());
 
-        logger.info("Parameter registration %s", success ? "succeeded" : "failed");
+        logger.info((std::string("Parameter registration ") +
+            (success ? "succeeded" : "failed")).c_str());
+
         return success;
     }
 

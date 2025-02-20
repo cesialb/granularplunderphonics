@@ -1,3 +1,15 @@
+find_package(SndFile REQUIRED)
+
+set(PLUGIN_SOURCES
+        ${PLUGIN_SOURCES}
+        audio/AudioFile.cpp
+)
+
+set(PLUGIN_HEADERS
+        ${PLUGIN_HEADERS}
+        audio/AudioFile.h
+)
+
 set(PLUGIN_SOURCES
         plugin/GranularPlunderphonicsProcessor.cpp
         plugin/GranularPlunderphonicsController.cpp
@@ -35,4 +47,5 @@ target_link_libraries(GranularPlunderphonics
         base
         pluginterfaces
         spdlog::spdlog
+        SndFile::sndfile
 )
