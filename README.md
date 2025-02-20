@@ -1,7 +1,6 @@
 # Granular Plunderphonics VST3 Plugin
 
 A modern C++ VST3 plugin for granular sound processing and audio manipulation inspired by plunderphonics techniques.
-
 ## Overview
 
 This VST3 plugin provides a framework for granular audio processing, specifically tailored for creative plunderphonics techniques. The current implementation provides a minimal mono-to-stereo pass-through with the architecture ready for more complex granular processing features.
@@ -10,40 +9,40 @@ This VST3 plugin provides a framework for granular audio processing, specificall
 
 - Modern C++17 implementation
 - VST3 SDK integration
-- Mono input to stereo output configuration
+- Mono/Stereo input to stereo output configuration
+- Comprehensive parameter management system with:
+   - Float, Boolean, Integer, and Enum parameter types
+   - Parameter smoothing and interpolation
+   - Thread-safe parameter access
+   - Parameter persistence (save/load state)
 - Comprehensive logging system with spdlog
-- Robust error handling
+- Robust error handling with custom exception types
 - Unit testing with Catch2
 
 ## Prerequisites
 
 - C++17 compatible compiler
 - CMake 3.15 or higher
-- VST3 SDK (must be installed/downloaded separately)
+- VST3 SDK (included as submodule)
 - Catch2 (for testing)
 
 ### External Dependencies
 
-The project is designed to work with minimal external dependencies initially. When you're ready for the full feature set:
-
 1. **spdlog** - A fast C++ logging library
-    - The project includes a simple logging implementation that will be replaced with spdlog
-    - Install using your package manager or from [https://github.com/gabime/spdlog](https://github.com/gabime/spdlog)
+   - Required for logging functionality
+   - Install using your package manager or from [https://github.com/gabime/spdlog](https://github.com/gabime/spdlog)
 
 2. **Catch2** - A modern C++ test framework
-    - Install using your package manager or from [https://github.com/catchorg/Catch2](https://github.com/catchorg/Catch2)
+   - Required for unit testing
+   - Install using your package manager or from [https://github.com/catchorg/Catch2](https://github.com/catchorg/Catch2)
 
 ### VST3 SDK Installation
 
-Before building this project, you'll need to download the VST3 SDK:
-
-1. Download the latest VST3 SDK from [Steinberg's Developer Portal](https://developer.steinberg.help/display/VST/VST+3+SDK)
-2. Extract it to a suitable location on your machine
-3. When configuring the project, set the `VST3_SDK_ROOT` CMake variable to point to your VST3 SDK location
+The VST3 SDK is included as a git submodule. After cloning the repository, initialize it with:
 
 ```bash
-# Example: Setting the VST3 SDK path during CMake configuration
-cmake .. -DVST3_SDK_ROOT=/path/to/vst3sdk
+git submodule update --init --recursive
+
 ```
 
 ## Building with CLion
@@ -62,7 +61,7 @@ This project is configured to work well with CLion. To build:
 git clone https://github.com/yourusername/GranularPlunderphonics.git
 cd GranularPlunderphonics
 
-# Initialize and update submodules if VST3 SDK is added as a submodule
+# Initialize and update submodules
 git submodule update --init --recursive
 
 # Create build directory
@@ -81,9 +80,17 @@ ctest -C Release
 
 ## Project Structure
 
-- `src/plugin/` - Core plugin implementation
-- `src/common/` - Shared utilities (logging, error handling)
+- `src/`
+   - `plugin/` - Core plugin implementation
+      - Parameter management
+      - Audio processing
+      - VST3 integration
+   - `common/` - Shared utilities
+      - Logging system
+      - Error handling
 - `test/` - Unit tests
+   - Parameter tests
+   - Processor tests
 
 ## Development Roadmap
 
@@ -92,11 +99,17 @@ ctest -C Release
 3. ✅ Logging system
 4. ✅ Error handling
 5. ✅ Unit tests
-6. ⬜ Granular processing engine
-7. ⬜ Parameter system for granular controls
-8. ⬜ Custom UI
-9. ⬜ Presets system
-10. ⬜ Advanced plunderphonics algorithms
+6. ✅ Parameter management system
+7. ⬜ Audio file management system
+8. ⬜ Basic granular processing engine
+9. ⬜ Advanced plunderphonics algorithms:
+   - Time stretching/compression
+   - Pitch shifting
+   - Sample chopping/rearrangement
+   - Layering and mixing
+   - Real-time manipulation
+10. ⬜ Custom UI
+11. ⬜ Presets system
 
 ## License
 
