@@ -59,3 +59,6 @@ target_link_libraries(GranularPlunderphonics
         spdlog::spdlog
         SndFile::sndfile
 )
+
+find_package(FFTW3f REQUIRED)
+target_link_libraries(GranularPlunderphonics PRIVATE FFTW3::Float)

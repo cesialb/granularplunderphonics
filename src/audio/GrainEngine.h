@@ -1,15 +1,15 @@
 /**
  * @file GrainEngine.h
- * @brief Core granular synthesis engine
+ * @brief Enhanced granular synthesis engine header
  */
 
 #pragma once
 
 #include <vector>
 #include <memory>
-#include <queue>
 #include <mutex>
-#include <atomic>
+#include <random>
+#include <unordered_map>
 #include "AudioBuffer.h"
 #include "../common/Logger.h"
 #include "../plugin/GranularParameters.h"
@@ -21,20 +21,34 @@ namespace GranularPlunderphonics {
  * @brief Represents a single grain in the granular synthesis engine
  */
 struct Grain {
-    size_t startPosition;      // Start position in source audio
-    size_t currentPosition;    // Current playback position
-    size_t grainSize;         // Size of grain in samples
-    float amplitude;          // Current amplitude
-    GrainShapeType shape;     // Envelope shape
-    bool active;              // Whether grain is currently playing
+    bool active{false};             // Whether grain is currently playing
+    size_t startPosition{0};        // Start position in source audio
+    size_t currentPosition{0};      // Current playback position
+    size_t grainSize{0};           // Size of grain in samples
+    float amplitude{1.0f};         // Amplitude scaling
+    float pan{0.5f};              // Stereo position (0 = left, 1 = right)
+    bool reverse{false};           // Reverse playback if true
+    GrainShapeType shape;          // Window/envelope shape
 
-    Grain() : startPosition(0), currentPosition(0), grainSize(0),
-              amplitude(0.0f), shape(GrainShapeType::Gaussian), active(false) {}
+    Grain() : shape(GrainShapeType::Gaussian) {}
+};
+
+/**
+ * @struct WindowKey
+ * @brief Key for window function cache lookup
+ */
+struct WindowKey {
+    GrainShapeType shape;
+    size_t size;
+
+    bool operator==(const WindowKey& other) const {
+        return shape == other.shape && size == other.size;
+    }
 };
 
 /**
  * @class GrainEngine
- * @brief Manages grain generation and processing for granular synthesis
+ * @brief Enhanced granular synthesis engine with advanced grain manipulation
  */
 class GrainEngine {
 public:
@@ -52,7 +66,7 @@ public:
      * @param numSamples Number of samples to process
      * @return true if successful
      */
-    bool process(const AudioBuffer& input, AudioBuffer& output, size_t numSamples);
+    bool process(AudioBuffer& input, AudioBuffer& output, size_t numSamples);
 
     /**
      * @brief Set grain size
@@ -62,53 +76,68 @@ public:
 
     /**
      * @brief Set grain density
-     * @param grainPerSecond Number of grains per second
+     * @param grainsPerSecond Number of grains per second
      */
     void setGrainDensity(float grainsPerSecond);
 
     /**
-     * @brief Set grain shape
-     * @param shape Envelope shape for new grains
+     * @brief Set grain envelope shape
+     * @param shape Window function type for grain envelope
      */
     void setGrainShape(GrainShapeType shape);
 
     /**
-     * @brief Reset the engine state
+     * @brief Set randomization parameters
+     * @param sizeVar Grain size variation (0-1)
+     * @param posVar Position variation (0-1)
+     * @param panVar Stereo position variation (0-1)
+     * @param revProb Probability of reverse playback (0-1)
      */
-    void reset();
+    void setRandomization(float sizeVar, float posVar, float panVar, float revProb);
 
 private:
+    // Window function handling
+    void initializeWindowFunctions();
+    std::vector<float> calculateWindow(GrainShapeType shape, size_t size);
+    float getGrainEnvelope(const Grain& grain, size_t position);
+
+    // Grain processing
+    void processActiveGrains(const AudioBuffer& input, AudioBuffer& output, size_t sampleIndex);
+    void triggerGrain(const AudioBuffer& input);
+    float interpolateSample(const AudioBuffer& buffer, size_t channel, float position);
+    bool validateBuffers(const AudioBuffer& input, const AudioBuffer& output, size_t numSamples);
+
+    // Member variables
     double mSampleRate;
     size_t mMaxGrains;
     std::vector<Grain> mGrains;
-    std::queue<size_t> mFreeGrainIndices;
     std::atomic<float> mGrainSizeMs;
     std::atomic<float> mGrainDensity;
     std::atomic<GrainShapeType> mGrainShape;
-    std::atomic<size_t> mNextGrainTime;
+
+    // Randomization parameters
+    float mSizeVariation{0.1f};
+    float mPositionVariation{0.1f};
+    float mPanVariation{0.1f};
+    float mReverseProb{0.0f};
+
+    // Random number generation
+    std::mt19937 mGenerator;
+    std::uniform_real_distribution<float> mPosDistribution;
+
+    // Window cache
+    struct WindowKeyHash {
+        std::size_t operator()(const WindowKey& k) const {
+            return std::hash<int>()(static_cast<int>(k.shape)) ^
+                   std::hash<size_t>()(k.size);
+        }
+    };
+    std::unordered_map<WindowKey, std::vector<float>, WindowKeyHash> mWindowCache;
+
+    // Synchronization
+    std::atomic<int> mNextGrainTime;
     mutable std::mutex mGrainMutex;
     Logger mLogger;
-
-    /**
-     * @brief Trigger a new grain
-     * @param sourcePos Position in source audio to start grain
-     * @return true if grain was triggered
-     */
-    bool triggerGrain(size_t sourcePos);
-
-    /**
-     * @brief Calculate grain envelope value
-     * @param grain Current grain
-     * @param position Position within grain
-     * @return Envelope amplitude
-     */
-    float calculateEnvelope(const Grain& grain, size_t position) const;
-
-    /**
-     * @brief Update grain states
-     * @param numSamples Number of samples to advance
-     */
-    void updateGrains(size_t numSamples);
 };
 
 } // namespace GranularPlunderphonics
