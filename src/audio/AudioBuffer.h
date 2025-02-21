@@ -69,6 +69,8 @@ public:
     }
 
 
+
+
     /**
      * @brief Get sample from buffer
      * @param channel Channel index

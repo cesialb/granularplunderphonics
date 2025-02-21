@@ -1,36 +1,17 @@
-# Test directory CMakeLists.txt
-find_package(Catch2 REQUIRED)
+# test/CMakeLists.txt
+find_package(Catch2 3 REQUIRED)
 
-set(TEST_SOURCES
-        ProcessorTests.cpp
-        ParameterTests.cpp
-        TestMain.cpp
+add_executable(GranularTests
+        GrainCloudTests.cpp
+        # ... other test files ...
 )
 
-set(TEST_SOURCES
-        ${TEST_SOURCES}
-        ResourceManagerTests.cpp
-)
-
-add_executable(GranularPlunderphonicsTests ${TEST_SOURCES})
-
-target_include_directories(GranularPlunderphonicsTests
+target_link_libraries(GranularTests
         PRIVATE
-        ${CMAKE_SOURCE_DIR}/src
-        ${VST3_SDK_ROOT}
+        Catch2::Catch2WithMain
+        GranularPlunderphonics
 )
 
-target_link_libraries(GranularPlunderphonicsTests
-        PRIVATE
-        sdk
-        sdk_common
-        spdlog::spdlog
-        Catch2::Catch2
-)
-
-# Copy test data files to build directory if needed
-# file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-
-# Add tests to CTest
+include(CTest)
 include(Catch)
-catch_discover_tests(GranularPlunderphonicsTests)
+catch_discover_tests(GranularTests)

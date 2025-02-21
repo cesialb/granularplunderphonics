@@ -34,3 +34,23 @@ enable_testing()
 # Add subdirectories
 add_subdirectory(src)
 add_subdirectory(test)
+
+# In your root CMakeLists.txt or the relevant subdirectory
+
+# In your root CMakeLists.txt
+
+# Find FFTW3
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(FFTW3 REQUIRED fftw3f)
+
+# Add to your target
+target_include_directories(YourTarget
+        PRIVATE
+        ${FFTW3_INCLUDE_DIRS}
+)
+
+target_link_libraries(YourTarget
+        PRIVATE
+        ${FFTW3_LIBRARIES}
+)
+
