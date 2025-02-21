@@ -59,6 +59,93 @@ void GrainProcessor::applyTimeStretch(AudioBuffer& grain, float stretchFactor) {
     grain = std::move(stretched);
 }
 
+void GrainProcessor::applyPhaseVocoder(AudioBuffer& grain, float pitchFactor) {
+    const size_t fftSize = 2048;
+    const size_t hopSize = fftSize / 4;
+
+    // Initialize FFTW data structures if not already done
+    if (mTimeData.size() != fftSize) {
+        mTimeData.resize(fftSize);
+        mFreqData.resize(fftSize * 2);  // Real and imaginary parts stored consecutively
+
+        mForwardPlan = fftwf_plan_dft_r2c_1d(fftSize,
+            mTimeData.data(),
+            reinterpret_cast<fftwf_complex*>(mFreqData.data()),
+            FFTW_MEASURE);
+
+        mInversePlan = fftwf_plan_dft_c2r_1d(fftSize,
+            reinterpret_cast<fftwf_complex*>(mFreqData.data()),
+            mTimeData.data(),
+            FFTW_MEASURE);
+    }
+
+    // Create analysis window
+    std::vector<float> window(fftSize);
+    for (size_t i = 0; i < fftSize; i++) {
+        window[i] = 0.5f * (1.0f - std::cos(2.0f * M_PI * i / (fftSize - 1)));
+    }
+
+    // Process each channel
+    for (size_t channel = 0; channel < grain.getNumChannels(); channel++) {
+        std::vector<std::complex<float>> prevPhase(fftSize/2 + 1);
+        std::vector<float> outputBuffer(grain.getNumSamples(), 0.0f);
+
+        // Process in overlapping frames
+        for (size_t i = 0; i < grain.getNumSamples(); i += hopSize) {
+            // Fill input buffer and apply window
+            std::fill(mTimeData.begin(), mTimeData.end(), 0.0f);
+            for (size_t j = 0; j < fftSize && (i + j) < grain.getNumSamples(); j++) {
+                mTimeData[j] = grain.getSample(channel, i + j) * window[j];
+            }
+
+            // Forward FFT
+            fftwf_execute(mForwardPlan);
+
+            // Phase processing
+            float freqPerBin = mSampleRate / fftSize;
+            for (size_t bin = 0; bin <= fftSize/2; bin++) {
+                float real = mFreqData[bin * 2];
+                float imag = mFreqData[bin * 2 + 1];
+                float magnitude = std::sqrt(real * real + imag * imag);
+                float phase = std::atan2(imag, real);
+
+                // Calculate true frequency
+                float phaseDiff = phase - std::arg(prevPhase[bin]);
+                if (phaseDiff > M_PI) phaseDiff -= 2.0f * M_PI;
+                if (phaseDiff < -M_PI) phaseDiff += 2.0f * M_PI;
+
+                float trueFreq = (phaseDiff * mSampleRate / (2.0f * M_PI * hopSize))
+                                + bin * freqPerBin;
+
+                // Apply pitch shift
+                trueFreq *= pitchFactor;
+
+                // Calculate new phase
+                float newPhase = std::fmod(phase +
+                    2.0f * M_PI * trueFreq * hopSize / mSampleRate, 2.0f * M_PI);
+
+                // Store new complex value
+                mFreqData[bin * 2] = magnitude * std::cos(newPhase);
+                mFreqData[bin * 2 + 1] = magnitude * std::sin(newPhase);
+                prevPhase[bin] = std::complex<float>(std::cos(newPhase), std::sin(newPhase));
+            }
+
+            // Inverse FFT
+            fftwf_execute(mInversePlan);
+
+            // Overlap-add to output
+            for (size_t j = 0; j < fftSize && (i + j) < grain.getNumSamples(); j++) {
+                outputBuffer[i + j] += (mTimeData[j] * window[j]) / (fftSize * 2.0f);
+            }
+        }
+
+        // Write processed data back to grain
+        for (size_t i = 0; i < grain.getNumSamples(); i++) {
+            grain.write(channel, &outputBuffer[i], 1, i);  // Using write instead of setSample
+        }
+    }
+}
+
 void GrainProcessor::applyStereoPosition(AudioBuffer& grain, float position) {
     static const float PI = 3.14159265358979323846f;
     float leftGain = std::cos(position * PI * 0.5f);
