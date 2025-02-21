@@ -363,6 +363,32 @@ const std::vector<float>& AudioFile::getChannelData(size_t channel) const {
     return mAudioData[channel];
 }
 
+    size_t AudioFile::readBuffer(float* buffer, size_t numFrames, size_t position) {
+        if (!mIsLoaded || !buffer) {
+            mLogger.error("Cannot read buffer: file not loaded or null buffer");
+            return 0;
+        }
+
+        if (position >= mInfo.numFrames) {
+            mLogger.error("Read position beyond file length");
+            return 0;
+        }
+
+        // Calculate how many frames we can actually read
+        size_t framesAvailable = mInfo.numFrames - position;
+        size_t framesToRead = std::min(numFrames, framesAvailable);
+
+        // For interleaved output
+        for (size_t frame = 0; frame < framesToRead; ++frame) {
+            for (size_t channel = 0; channel < mInfo.numChannels; ++channel) {
+                buffer[frame * mInfo.numChannels + channel] =
+                    mAudioData[channel][position + frame];
+            }
+        }
+
+        return framesToRead;
+    }
+
 void AudioFile::clear() {
     enableMemoryMapping(false);  // Cleanup memory mapping if active
     mAudioData.clear();

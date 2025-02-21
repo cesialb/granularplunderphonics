@@ -1,8 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
 #include "../src/audio/AudioFile.h"
+#include "../src/audio/AudioBuffer.h"
 #include <cmath>
 #include <vector>
+#include <random>
 
 using namespace GranularPlunderphonics;
 
