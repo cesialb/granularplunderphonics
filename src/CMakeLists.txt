@@ -1,64 +1,74 @@
+# Find required packages
 find_package(SndFile REQUIRED)
+find_package(PkgConfig REQUIRED)
 
-set(PLUGIN_SOURCES
-        ${PLUGIN_SOURCES}
+# Create the core library
+add_library(GranularPlunderphonicsCore STATIC
+        audio/AudioBuffer.cpp
         audio/AudioFile.cpp
-)
-
-set(PLUGIN_HEADERS
-        ${PLUGIN_HEADERS}
-        audio/AudioFile.h
-)
-
-set(PLUGIN_SOURCES
-        ${PLUGIN_SOURCES}
+        audio/FileFormat.cpp
+        audio/GrainCloud.cpp
+        audio/GrainEngine.cpp
+        audio/GrainGenerator.cpp
+        audio/GrainProcessor.cpp
+        audio/Resampler.cpp
+        audio/StreamingManager.cpp
+        common/ErrorHandling.cpp
+        common/Logger.cpp
         common/ResourceManager.cpp
 )
 
-set(PLUGIN_HEADERS
-        ${PLUGIN_HEADERS}
-        common/ResourceManager.h
-)
-
-set(PLUGIN_SOURCES
-        plugin/GranularPlunderphonicsProcessor.cpp
-        plugin/GranularPlunderphonicsController.cpp
-        plugin/GranularPlunderphonicsEntry.cpp
-        plugin/ParameterManager.cpp
-        common/Logger.cpp
-        common/ErrorHandling.cpp
-)
-
-set(PLUGIN_HEADERS
-        plugin/GranularPlunderphonicsProcessor.h
-        plugin/GranularPlunderphonicsController.h
-        plugin/GranularPlunderphonicsIDs.h
-        plugin/GranularParameters.h
-        plugin/ParameterManager.h
-        plugin/version.h
-        common/Logger.h
-        common/ErrorHandling.h
-)
-
-add_library(GranularPlunderphonics MODULE
-        ${PLUGIN_SOURCES}
-        ${PLUGIN_HEADERS}
-)
-
-target_include_directories(GranularPlunderphonics
-        PRIVATE
+target_include_directories(GranularPlunderphonicsCore
+        PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${VST3_SDK_ROOT}
+        "${FFTW_ROOT}/include"
 )
 
-target_link_libraries(GranularPlunderphonics
-        PRIVATE
-        sdk
-        base
-        pluginterfaces
+target_link_directories(GranularPlunderphonicsCore
+        PUBLIC
+        "${FFTW_ROOT}/lib"
+)
+
+target_link_libraries(GranularPlunderphonicsCore
+        PUBLIC
         spdlog::spdlog
         SndFile::sndfile
+        "${FFTW_ROOT}/lib/libfftw3f.dylib"
 )
 
-find_package(FFTW3f REQUIRED)
-target_link_libraries(GranularPlunderphonics PRIVATE FFTW3::Float)
+# Create the VST3 plugin as a module
+add_library(GranularPlunderphonics MODULE
+        plugin/GranularPlunderphonicsController.cpp
+        plugin/GranularPlunderphonicsEntry.cpp
+        plugin/GranularPlunderphonicsProcessor.cpp
+        plugin/ParameterManager.cpp
+)
+
+# Add framework dependencies for macOS
+if(APPLE)
+    find_library(COREFOUNDATION_LIBRARY CoreFoundation)
+    target_link_libraries(GranularPlunderphonics
+            PRIVATE
+            GranularPlunderphonicsCore
+            sdk
+            base
+            pluginterfaces
+            "-framework CoreFoundation"
+    )
+else()
+    target_link_libraries(GranularPlunderphonics
+            PRIVATE
+            GranularPlunderphonicsCore
+            sdk
+            base
+            pluginterfaces
+    )
+endif()
+
+# Set the output name and properties for the VST3 plugin
+set_target_properties(GranularPlunderphonics PROPERTIES
+        PREFIX ""
+        SUFFIX ".vst3"
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/VST3"
+)

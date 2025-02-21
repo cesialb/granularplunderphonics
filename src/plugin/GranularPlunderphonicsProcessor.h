@@ -1,71 +1,49 @@
-/**
- * @file GranularPlunderphonicsProcessor.h
- * @brief Defines the audio processor component of the GranularPlunderphonics VST3 plugin
- */
-
+// GranularPlunderphonicsProcessor.h
 #pragma once
 
 #include "pluginterfaces/base/funknown.h"
 #include "pluginterfaces/vst/vsttypes.h"
+#include "pluginterfaces/base/ftypes.h"  // Add this for int32
 #include "public.sdk/source/vst/vstaudioeffect.h"
 #include "../common/Logger.h"
 #include "GranularPlunderphonicsIDs.h"
+#include "ParameterManager.h"
+
 
 namespace GranularPlunderphonics {
 
-//------------------------------------------------------------------------
-/**
- * @class GranularPlunderphonicsProcessor
- * @brief Main audio processor for the Granular Plunderphonics VST3 plugin
- */
-class GranularPlunderphonicsProcessor : public Steinberg::Vst::AudioEffect
-{
-public:
-    //------------------------------------------------------------------------
-    // Constructor and destructor
-    //------------------------------------------------------------------------
-    GranularPlunderphonicsProcessor();
+    using namespace Steinberg;  // Add this
+    using namespace Steinberg::Vst;  // Add this
 
-    //------------------------------------------------------------------------
-    // AudioEffect interface implementation
-    //------------------------------------------------------------------------
-    /** Called at first after constructor */
-    Steinberg::tresult PLUGIN_API initialize(Steinberg::FUnknown* context) SMTG_OVERRIDE;
+    class GranularPlunderphonicsProcessor : public AudioEffect {  // Remove Steinberg::Vst:: prefix
+    public:
+        GranularPlunderphonicsProcessor();
+        ~GranularPlunderphonicsProcessor() SMTG_OVERRIDE = default;
 
-    /** Called after initialize */
-    Steinberg::tresult PLUGIN_API setActive(Steinberg::TBool state) SMTG_OVERRIDE;
+        // Create function
+        static FUnknown* createInstance(void*) {  // Remove Steinberg:: prefix
+            return static_cast<IAudioProcessor*>(new GranularPlunderphonicsProcessor());  // Remove Steinberg::Vst:: prefix
+        }
 
-    /** Called before destructor */
-    Steinberg::tresult PLUGIN_API terminate() SMTG_OVERRIDE;
+        // AudioEffect overrides
+        tresult PLUGIN_API initialize(FUnknown* context) SMTG_OVERRIDE;  // Remove Steinberg:: prefix
+        tresult PLUGIN_API terminate() SMTG_OVERRIDE;
+        tresult PLUGIN_API setActive(TBool state) SMTG_OVERRIDE;
+        tresult PLUGIN_API process(ProcessData& data) SMTG_OVERRIDE;  // Remove Steinberg::Vst:: prefix
+        tresult PLUGIN_API setupProcessing(ProcessSetup& setup) SMTG_OVERRIDE;
+        tresult PLUGIN_API setBusArrangements(
+            SpeakerArrangement* inputs, int32 numIns,  // Remove Steinberg::Vst:: prefix
+            SpeakerArrangement* outputs, int32 numOuts) SMTG_OVERRIDE;
 
-    /** Audio processing */
-    Steinberg::tresult PLUGIN_API process(Steinberg::Vst::ProcessData& data) SMTG_OVERRIDE;
+    protected:
+        void processParameterChanges(IParameterChanges* paramChanges);  // Remove Steinberg::Vst:: prefix
 
-    /** Setup processing */
-    Steinberg::tresult PLUGIN_API setupProcessing(Steinberg::Vst::ProcessSetup& setup) SMTG_OVERRIDE;
-
-    /** Bus arrangement setup */
-    Steinberg::tresult PLUGIN_API setBusArrangements(
-        Steinberg::Vst::SpeakerArrangement* inputs, Steinberg::int32 numIns,
-        Steinberg::Vst::SpeakerArrangement* outputs, Steinberg::int32 numOuts) SMTG_OVERRIDE;
-
-    /** Creation method called by the factory */
-    static Steinberg::FUnknown* createInstance(void* context);
-
-protected:
-    //------------------------------------------------------------------------
-    // Member variables
-    //------------------------------------------------------------------------
-    bool mBypass;         // Bypass state
-    float mSampleRate;    // Current sample rate
-    int mBlockSize;       // Maximum block size
-    Logger mLogger;       // Logger instance
-
-    //------------------------------------------------------------------------
-    // Helper methods
-    //------------------------------------------------------------------------
-    /** Handle parameter changes */
-    void processParameterChanges(Steinberg::Vst::IParameterChanges* paramChanges);
-};
+    private:
+        bool mBypass;
+        float mSampleRate;
+        int32 mBlockSize;  // Change int to int32
+        Logger mLogger{"GranularProcessor"};
+        ParameterManager mParameterManager;
+    };
 
 } // namespace GranularPlunderphonics

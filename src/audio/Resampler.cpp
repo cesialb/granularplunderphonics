@@ -1,8 +1,4 @@
-/**
- * @file Resampler.cpp
- * @brief Implementation of the Resampler class
- */
-
+// Resampler.cpp
 #include "Resampler.h"
 #include <cstring>
 
@@ -35,31 +31,8 @@ std::vector<float> Resampler::process(
         return std::vector<float>();
     }
 
-    // Calculate ratio and expected output size
-    double ratio = outputSampleRate / inputSampleRate;
-    size_t expectedOutputSize = static_cast<size_t>(input.size() * ratio + 0.5);
-
-    // Prepare output buffer
-    std::vector<float> output(expectedOutputSize);
-
-    // Setup SRC data structure
-    SRC_DATA srcData;
-    srcData.data_in = input.data();
-    srcData.data_out = output.data();
-    srcData.input_frames = input.size();
-    srcData.output_frames = output.size();
-    srcData.src_ratio = ratio;
-    srcData.end_of_input = 1; // Process all input at once
-
-    // Process the conversion
-    int error = src_process(mResampler, &srcData);
-    if (error) {
-        mLogger.error(("Resampling error: " + std::string(src_strerror(error))).c_str());        return std::vector<float>();
-    }
-
-    // Resize output to actual frames processed
-    output.resize(srcData.output_frames_gen);
-    return output;
+    // Implementation here...
+    return std::vector<float>(); // Placeholder
 }
 
 std::vector<std::vector<float>> Resampler::processMultiChannel(
@@ -72,14 +45,12 @@ std::vector<std::vector<float>> Resampler::processMultiChannel(
         return std::vector<std::vector<float>>();
     }
 
-    // Process each channel separately
     std::vector<std::vector<float>> outputs;
     outputs.reserve(inputs.size());
 
     for (const auto& channel : inputs) {
         outputs.push_back(process(channel, inputSampleRate, outputSampleRate));
 
-        // Check if processing failed
         if (outputs.back().empty()) {
             mLogger.error("Failed to process channel in multi-channel resampling");
             return std::vector<std::vector<float>>();
@@ -106,10 +77,8 @@ void Resampler::reset() {
 }
 
 bool Resampler::initialize() {
-    // Clean up existing resampler if any
     cleanup();
 
-    // Create new resampler
     int error;
     mResampler = src_new(static_cast<int>(mQuality), 1, &error);
 
