@@ -42,6 +42,34 @@ public:
     size_t getNumSamples() const { return mNumSamples; }
 
     /**
+ * @brief Get buffer size (number of samples)
+ * @return Number of samples per channel
+ */
+    size_t getSize() const { return getNumSamples(); }
+
+    /**
+     * @brief Read samples from buffer
+     * @param channel Channel index
+     * @param data Destination buffer
+     * @param numSamples Number of samples to read
+     * @param startPos Start position in buffer
+     * @return true if successful
+     */
+    bool read(size_t channel, float* data, size_t numSamples, size_t startPos = 0) const {
+        if (channel >= mNumChannels ||
+            startPos + numSamples > mNumSamples ||
+            !data) {
+            return false;
+            }
+
+        std::copy(mBuffer[channel].begin() + startPos,
+                  mBuffer[channel].begin() + startPos + numSamples,
+                  data);
+        return true;
+    }
+
+
+    /**
      * @brief Get sample from buffer
      * @param channel Channel index
      * @param position Sample position
