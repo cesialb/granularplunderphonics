@@ -7,6 +7,11 @@ set(TEST_SOURCES
         TestMain.cpp
 )
 
+set(TEST_SOURCES
+        ${TEST_SOURCES}
+        ResourceManagerTests.cpp
+)
+
 add_executable(GranularPlunderphonicsTests ${TEST_SOURCES})
 
 target_include_directories(GranularPlunderphonicsTests

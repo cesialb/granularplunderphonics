@@ -11,6 +11,16 @@ set(PLUGIN_HEADERS
 )
 
 set(PLUGIN_SOURCES
+        ${PLUGIN_SOURCES}
+        common/ResourceManager.cpp
+)
+
+set(PLUGIN_HEADERS
+        ${PLUGIN_HEADERS}
+        common/ResourceManager.h
+)
+
+set(PLUGIN_SOURCES
         plugin/GranularPlunderphonicsProcessor.cpp
         plugin/GranularPlunderphonicsController.cpp
         plugin/GranularPlunderphonicsEntry.cpp
