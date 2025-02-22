@@ -99,13 +99,13 @@ tresult PLUGIN_API GranularPlunderphonicsProcessor::process(ProcessData& data)
     return kResultOk;
 }
 
+    // Update this implementation in GranularPlunderphonicsProcessor.cpp
     void GranularPlunderphonicsProcessor::processParameterChanges(::Steinberg::Vst::IParameterChanges* paramChanges)
     {
         if (!paramChanges) {
             return;
         }
 
-        // Get parameter count
         int32 numParamsChanged = paramChanges->getParameterCount();
 
         // For each parameter change
@@ -115,38 +115,39 @@ tresult PLUGIN_API GranularPlunderphonicsProcessor::process(ProcessData& data)
                 continue;
             }
 
-            // Get parameter ID
             ::Steinberg::Vst::ParamID paramId = paramQueue->getParameterId();
-
-            // Get last point value (most recent change)
-            int32 pointCount = paramQueue->getPointCount();
-            if (pointCount <= 0) {
-                continue;
-            }
-
+            int32 numPoints = paramQueue->getPointCount();
             int32 sampleOffset;
-            double value;
+            ::Steinberg::Vst::ParamValue value;
 
-            // Get the last value (most recent)
-            if (paramQueue->getPoint(pointCount - 1, sampleOffset, value) != ::Steinberg::kResultTrue) {
+            // Get the last point in the queue
+            if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) != ::Steinberg::kResultTrue) {
                 continue;
             }
 
-            // Handle parameter changes based on ID
+            // Handle parameter changes
             switch (paramId) {
-                case GranularParameterIDs::kParamGrainSize:
-                    //mParameterManager.setGrainSize(value);
+                case GranularPlunderphonics::kBypassId:
+                    mBypass = (value >= 0.5f);
                 break;
 
-                case GranularParameterIDs::kParamGrainShape:
-                    //mParameterManager.setGrainShape(static_cast<int>(value));
-                break;
+                case GranularPlunderphonics::kGrainSizeId:
+                    // Store grain size parameter value
+                        // You'll implement grain size handling here
+                            break;
 
-                case GranularParameterIDs::kParamGrainDensity:
-                    //mParameterManager.setGrainDensity(value);
-                break;
+                case GranularPlunderphonics::kGrainShapeId:
+                    // Store grain shape parameter value
+                        // You'll implement grain shape handling here
+                            break;
 
-                // Add other parameters as needed
+                case GranularPlunderphonics::kGrainDensityId:
+                    // Store grain density parameter value
+                        // You'll implement grain density handling here
+                            break;
+
+                default:
+                    break;
             }
         }
     }

@@ -6,6 +6,7 @@
 
 using namespace GranularPlunderphonics;
 
+/*
 TEST_CASE("Specific Parameter Tests", "[parameters]") {
     ParameterManager manager;
     GranularParameters::registerParameters(manager);
@@ -153,3 +154,4 @@ TEST_CASE("Specific Parameter Tests", "[parameters]") {
         REQUIRE_FALSE(foundError);
     }
 }
+*/

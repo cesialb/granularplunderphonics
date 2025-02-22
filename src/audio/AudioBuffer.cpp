@@ -45,4 +45,47 @@ namespace GranularPlunderphonics {
         }
         mLogger.info(("Buffer resized to " + std::to_string(numSamples) + " samples").c_str());  // Added .c_str()
     }
+
+    void AudioBuffer::clear() {
+        std::lock_guard<std::mutex> lock(mMutex);
+        for (auto& channel : mBuffer) {
+            std::fill(channel.begin(), channel.end(), 0.0f);
+        }
+    }
+
+    bool AudioBuffer::addSample(size_t channel, size_t position, float value) {
+        if (!isValidChannel(channel) || position >= mBuffer[channel].size()) {
+            return false;
+        }
+        std::lock_guard<std::mutex> lock(mMutex);
+        mBuffer[channel][position] += value;
+        return true;
+    }
+
+    bool AudioBuffer::read(size_t channel, float* data, size_t numSamples, size_t startPos) const {
+        if (!isValidChannel(channel) || !data) {
+            return false;
+        }
+
+        std::lock_guard<std::mutex> lock(mMutex);
+
+        if (startPos + numSamples > mBuffer[channel].size()) {
+            return false;
+        }
+
+        std::copy(mBuffer[channel].begin() + startPos,
+                  mBuffer[channel].begin() + startPos + numSamples,
+                  data);
+        return true;
+    }
+
+    float AudioBuffer::getSample(size_t channel, size_t position) const {
+        if (!isValidChannel(channel) || position >= mBuffer[channel].size()) {
+            return 0.0f;
+        }
+        std::lock_guard<std::mutex> lock(mMutex);
+        return mBuffer[channel][position];
+    }
+
+
 }

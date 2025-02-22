@@ -1,5 +1,3 @@
-// test/GrainCloudTests.cpp
-
 #include <catch2/catch_test_macros.hpp>
 #include "../src/audio/GrainCloud.h"
 #include "../src/audio/AudioBuffer.h"
@@ -23,7 +21,9 @@ TEST_CASE("GrainCloud Basic Operation", "[graincloud]") {
     source.write(0, sineWave.data(), sineWave.size(), 0);
 
     SECTION("Low Density") {
-        cloud.setDensity(1.0f); // 1 grain per second
+        CloudParameters params;
+        params.density = 1.0f; // 1 grain per second
+        cloud.setCloudParameters(params);
         cloud.process(source, output, 1024);
 
         // Verify output has some non-zero content
@@ -38,11 +38,14 @@ TEST_CASE("GrainCloud Basic Operation", "[graincloud]") {
     }
 
     SECTION("High Density") {
-        cloud.setDensity(100.0f); // 100 grains per second
-        RandomizationParams params;
-        params.positionVariation = 0.5f;
-        params.sizeVariation = 0.5f;
-        cloud.setRandomization(params);
+        CloudParameters cloudParams;
+        cloudParams.density = 100.0f; // 100 grains per second
+        cloud.setCloudParameters(cloudParams);
+
+        RandomizationParameters randParams;
+        randParams.positionVariation = 0.5f;
+        randParams.sizeVariation = 0.5f;
+        cloud.setRandomization(randParams);
 
         cloud.process(source, output, 1024);
 
@@ -56,10 +59,13 @@ TEST_CASE("GrainCloud Basic Operation", "[graincloud]") {
     }
 
     SECTION("Randomization") {
-        cloud.setDensity(10.0f);
-        RandomizationParams params;
-        params.positionVariation = 1.0f;
-        cloud.setRandomization(params);
+        CloudParameters cloudParams;
+        cloudParams.density = 10.0f;
+        cloud.setCloudParameters(cloudParams);
+
+        RandomizationParameters randParams;
+        randParams.positionVariation = 1.0f;
+        cloud.setRandomization(randParams);
 
         AudioBuffer output1(2, 1024);
         AudioBuffer output2(2, 1024);

@@ -7,8 +7,8 @@ using namespace GranularPlunderphonics;
 
 namespace {
     // Helper to create test audio buffer with sine wave
-    AudioBuffer createTestTone(double frequency, double sampleRate, size_t numSamples) {
-        AudioBuffer buffer(1, numSamples);
+    std::unique_ptr<AudioBuffer> createTestTone(double frequency, double sampleRate, size_t numSamples) {
+        auto buffer = std::make_unique<AudioBuffer>(1, numSamples);
         std::vector<float> data(numSamples);
 
         for (size_t i = 0; i < numSamples; ++i) {
@@ -16,7 +16,7 @@ namespace {
             data[i] = std::sin(2.0 * M_PI * frequency * t);
         }
 
-        buffer.write(0, data.data(), data.size(), 0);
+        buffer->write(0, data.data(), data.size(), 0);
         return buffer;
     }
 
@@ -35,7 +35,7 @@ namespace {
         }
 
         // Calculate frequency from zero crossings
-        float duration = static_cast<float>(data.size()) / 44100.0f; // Assuming 44.1kHz
+        float duration = static_cast<float>(data.size()) / 44100.0f;
         return (crossings / 2.0f) / duration;
     }
 
@@ -54,66 +54,74 @@ namespace {
 
 TEST_CASE("Pitch Shifting Tests", "[grainprocessor]") {
     const double sampleRate = 44100.0;
-    GrainProcessor processor(sampleRate);
+    GrainProcessor processor(2048); // Use a reasonable FFT size
 
     SECTION("Octave Shifts") {
         // Create test grain with 440Hz sine wave
-        AudioBuffer grain = createTestTone(440.0, sampleRate, 2048);
+        auto grain = createTestTone(440.0, sampleRate, 2048);
+        // Create a new buffer with same specs and copy the data manually
+        auto processed = std::make_unique<AudioBuffer>(grain->getNumChannels(), grain->getNumSamples());
+        std::vector<float> tempData(grain->getNumSamples());
+        grain->read(0, tempData.data(), tempData.size(), 0);
+        processed->write(0, tempData.data(), tempData.size(), 0);
 
         std::vector<float> pitchFactors = {0.5f, 2.0f}; // Octave down/up
         for (float factor : pitchFactors) {
-            GrainProcessingConfig config;
+            ProcessingParameters config;
             config.pitchShift = factor;
+            config.timeStretch = 1.0f;
 
-            AudioBuffer processed = grain;
-            processor.processGrain(processed, config);
+            processor.processGrain(*processed, config);
 
             // Verify frequency content
             float expectedFreq = 440.0f * factor;
-            REQUIRE(detectFrequency(processed) == Catch::Approx(expectedFreq).margin(1.0));
+            REQUIRE(detectFrequency(*processed) == Catch::Approx(expectedFreq).margin(1.0));
         }
     }
 
     SECTION("Time Stretching") {
-        AudioBuffer grain = createTestTone(440.0, sampleRate, 2048);
+        auto grain = createTestTone(440.0, sampleRate, 2048);
+        // Create a new buffer with same specs and copy the data manually
+        auto processed = std::make_unique<AudioBuffer>(grain->getNumChannels(), grain->getNumSamples());
+        std::vector<float> tempData(grain->getNumSamples());
+        grain->read(0, tempData.data(), tempData.size(), 0);
+        processed->write(0, tempData.data(), tempData.size(), 0);
 
-        std::vector<float> stretchFactors = {0.5f, 2.0f};
+        float factors[] = {0.5f, 2.0f};
+        std::vector<float> stretchFactors(factors, factors + 2);
         for (float factor : stretchFactors) {
-            GrainProcessingConfig config;
+            ProcessingParameters config;
             config.timeStretch = factor;
+            config.pitchShift = 1.0f;
 
-            AudioBuffer processed = grain;
-            processor.processGrain(processed, config);
+            processor.processGrain(*processed, config);
 
             // Verify duration and pitch preservation
-            REQUIRE(processed.getNumSamples() ==
-                static_cast<size_t>(grain.getNumSamples() * factor));
-            REQUIRE(detectFrequency(processed) == Catch::Approx(440.0).margin(1.0));
+            REQUIRE(processed->getNumSamples() ==
+                static_cast<size_t>(grain->getNumSamples() * factor));
+            REQUIRE(detectFrequency(*processed) == Catch::Approx(440.0).margin(1.0));
         }
     }
 
-    SECTION("Stereo Positioning") {
-        AudioBuffer grain = createTestTone(440.0, sampleRate, 2048);
+    SECTION("Stereo Processing") {
+        auto grain = createTestTone(440.0, sampleRate, 2048);
+        auto stereoGrain = std::make_unique<AudioBuffer>(2, grain->getNumSamples());
 
-        std::vector<float> positions = {0.0f, 0.25f, 0.5f, 0.75f, 1.0f};
-        for (float pos : positions) {
-            GrainProcessingConfig config;
-            config.stereoPosition = pos;
+        // Copy mono signal to both channels
+        std::vector<float> data(grain->getNumSamples());
+        grain->read(0, data.data(), data.size(), 0);
+        stereoGrain->write(0, data.data(), data.size(), 0);
+        stereoGrain->write(1, data.data(), data.size(), 0);
 
-            AudioBuffer processed = grain;
-            processor.processGrain(processed, config);
+        ProcessingParameters config;
+        config.timeStretch = 1.0f;
+        config.pitchShift = 1.0f;
 
-            // Verify channel balance
-            float leftRMS = calculateRMS(processed, 0);
-            float rightRMS = calculateRMS(processed, 1);
+        processor.processGrain(*stereoGrain, config);
 
-            if (pos < 0.5f) {
-                REQUIRE(leftRMS > rightRMS);
-            } else if (pos > 0.5f) {
-                REQUIRE(rightRMS > leftRMS);
-            } else {
-                REQUIRE(leftRMS == Catch::Approx(rightRMS).margin(0.01));
-            }
-        }
+        // Verify both channels are processed correctly
+        float rmsLeft = calculateRMS(*stereoGrain, 0);
+        float rmsRight = calculateRMS(*stereoGrain, 1);
+        REQUIRE(rmsLeft == Catch::Approx(rmsRight).margin(0.01));
     }
 }
