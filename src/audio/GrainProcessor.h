@@ -1,112 +1,115 @@
-/**
- * @file GrainProcessor.h
- * @brief Advanced grain processing with phase vocoder implementation
- */
-
-#pragma once
-
+#include <cmath>
 #include <vector>
 #include <memory>
-#include <fftw3.h>
+#include <algorithm>
+#include <cstring>
 #include "AudioBuffer.h"
-#include "../common/Logger.h"
+#include <fftw3.h>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 namespace GranularPlunderphonics {
 
-/**
- * @struct ProcessingParameters
- * @brief Parameters for grain processing operations
- */
-struct ProcessingParameters {
-    float timeStretch{1.0f};    // Time stretching factor
-    float pitchShift{1.0f};     // Pitch shifting factor (in semitones)
-    float formantShift{1.0f};   // Formant preservation factor
+// Forward declarations
+class AudioBuffer;
+
+enum class InterpolationType {
+    Linear,
+    Cubic,
+    Sinc4,
+    Sinc8
 };
 
-/**
- * @class GrainProcessor
- * @brief Implements advanced grain processing techniques using phase vocoder
- */
+struct PhaseVocoderSettings {
+    bool phaseLocking{true};      // Enable phase locking for transients
+    float transientThreshold{0.2f}; // Threshold for transient detection
+    std::size_t analysisHopSize{256};   // Analysis hop size
+    std::size_t synthesisHopSize{256};  // Synthesis hop size
+    float coherenceThreshold{0.8f}; // Phase coherence threshold
+};
+
+struct ProcessingParameters {
+    float timeStretch{1.0f};
+    float pitchShift{1.0f};
+    float formantShift{1.0f};
+    InterpolationType interpolation{InterpolationType::Cubic};
+    PhaseVocoderSettings vocoderSettings;
+};
+
 class GrainProcessor {
 public:
-    /**
-     * @brief Constructor
-     * @param fftSize Size of FFT (must be power of 2)
-     */
-    explicit GrainProcessor(size_t fftSize = 2048);
+    GrainProcessor(std::size_t fftSize)
+        : mFFTSize(fftSize)
+        , mPreviousMagnitudes(fftSize/2 + 1)
+        , mIsFirstFrame(true) {
+        initializeFFT();
+    }
 
-    /**
-     * @brief Destructor
-     */
-    ~GrainProcessor();
+    ~GrainProcessor() {
+        cleanupFFT();
+    }
 
-    /**
-     * @brief Process a grain with specified parameters
-     * @param grain Grain buffer to process
-     * @param params Processing parameters
-     */
     void processGrain(AudioBuffer& grain, const ProcessingParameters& params);
 
-    /**
-     * @brief Apply time stretching to a grain
-     * @param grain Grain buffer to process
-     * @param stretchFactor Time stretching factor
-     */
-    void applyTimeStretch(AudioBuffer& grain, float stretchFactor);
-
-    /**
-     * @brief Apply pitch shifting to a grain
-     * @param grain Grain buffer to process
-     * @param pitchFactor Pitch shifting factor
-     */
-    void applyPitchShift(AudioBuffer& grain, float pitchFactor);
-
 private:
-    /**
-     * @brief Initialize FFT resources
-     */
-    void initializeFFT();
-
-    /**
-     * @brief Clean up FFT resources
-     */
-    void cleanupFFT();
-
-    /**
-     * @brief Apply phase vocoder processing
-     * @param grain Grain buffer to process
-     * @param params Processing parameters
-     */
-    void applyPhaseVocoder(AudioBuffer& grain, const ProcessingParameters& params);
-
-    /**
-     * @brief Process a single FFT frame
-     * @param freqData Frequency domain data
-     * @param previousPhase Previous phase values
-     * @param synthesisPhase Synthesis phase values
-     * @param params Processing parameters
-     */
-    void processFrame(fftwf_complex* freqData,
-                     std::vector<float>& previousPhase,
-                     std::vector<float>& synthesisPhase,
-                     const ProcessingParameters& params);
-
-    /**
-     * @brief Create window function
-     * @param size Window size
-     * @return Window function values
-     */
-    std::vector<float> createWindow(size_t size);
-
-    // FFT resources
-    size_t mFFTSize;
-    size_t mHopSize;
+    std::size_t mFFTSize;
+    std::vector<float> mPreviousMagnitudes;
+    bool mIsFirstFrame;
     float* mTimeData{nullptr};
     fftwf_complex* mFreqData{nullptr};
     fftwf_plan mForwardPlan{nullptr};
     fftwf_plan mInversePlan{nullptr};
 
-    Logger mLogger;
+    void initializeFFT() {
+        mTimeData = reinterpret_cast<float*>(fftwf_malloc(sizeof(float) * mFFTSize));
+        mFreqData = reinterpret_cast<fftwf_complex*>(
+            fftwf_malloc(sizeof(fftwf_complex) * (mFFTSize/2 + 1)));
+
+        mForwardPlan = fftwf_plan_dft_r2c_1d(mFFTSize, mTimeData, mFreqData, FFTW_MEASURE);
+        mInversePlan = fftwf_plan_dft_c2r_1d(mFFTSize, mFreqData, mTimeData, FFTW_MEASURE);
+    }
+
+    void cleanupFFT() {
+        if (mForwardPlan) fftwf_destroy_plan(mForwardPlan);
+        if (mInversePlan) fftwf_destroy_plan(mInversePlan);
+        if (mTimeData) fftwf_free(mTimeData);
+        if (mFreqData) fftwf_free(mFreqData);
+    }
+
+    float sincInterpolate(const float* buffer, std::size_t size, float position, int points) {
+        float sum = 0.0f;
+        int start = static_cast<int>(std::floor(position)) - points/2;
+
+        for (int i = 0; i < points; ++i) {
+            int idx = start + i;
+            if (idx >= 0 && idx < static_cast<int>(size)) {
+                float x = static_cast<float>(M_PI) * (position - idx);
+                if (std::abs(x) > 1e-6f) {
+                    sum += buffer[idx] * std::sin(x) / x;
+                } else {
+                    sum += buffer[idx];
+                }
+            }
+        }
+        return sum;
+    }
+
+    float interpolateSample(const float* buffer, std::size_t size, float position,
+                          InterpolationType type);
+
+    void processPhaseVocoder(fftwf_complex* freqData,
+                            std::vector<float>& previousPhase,
+                            std::vector<float>& synthesisPhase,
+                            const ProcessingParameters& params);
+
+    void detectTransients(fftwf_complex* freqData,
+                         std::size_t binCount,
+                         float threshold,
+                         std::vector<bool>& isLockedPhase);
+
+    std::vector<float> createWindow(std::size_t size);
 };
 
 } // namespace GranularPlunderphonics
