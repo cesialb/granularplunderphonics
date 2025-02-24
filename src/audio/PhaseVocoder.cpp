@@ -1,5 +1,12 @@
-// PhaseVocoder.cpp
-PhaseVocoder::PhaseVocoder(size_t maxWindowSize) {
+#include "PhaseVocoder.h"
+#include <cstring>
+
+namespace GranularPlunderphonics {
+
+// PhaseVocoder implementation
+PhaseVocoder::PhaseVocoder(size_t maxWindowSize)
+    : mLogger("PhaseVocoder")
+{
     mSettings.windowSize = std::min(maxWindowSize, size_t(4096));
     mSettings.hopSize = mSettings.windowSize / 4;
 
@@ -27,8 +34,9 @@ PhaseVocoder::PhaseVocoder(size_t maxWindowSize) {
     createWindow();
     reset();
 
-    mLogger.info("PhaseVocoder initialized with window size " +
-                 std::to_string(mSettings.windowSize));
+    // Convert to const char* for logger
+    mLogger.info(("PhaseVocoder initialized with window size " +
+                  std::to_string(mSettings.windowSize)).c_str());
 }
 
 PhaseVocoder::~PhaseVocoder() {
@@ -70,7 +78,6 @@ void PhaseVocoder::process(const float* input, float* output, size_t numSamples)
         // Detect transients
         currentFrame.isTransient = detectTransient(currentFrame);
 
-        // Process frame
         if (mFrameBuffer.empty()) {
             // First frame - just store it
             mFrameBuffer.push_back(currentFrame);
@@ -142,7 +149,6 @@ void PhaseVocoder::analyzePhase(Frame& frame, const Frame& prevFrame) {
 
 void PhaseVocoder::synthesizePhase(Frame& frame, const Frame& prevFrame) {
     const float twoPi = 2.0f * M_PI;
-    const float freqPerBin = 44100.0f / mSettings.windowSize;
 
     for (size_t bin = 0; bin < frame.phase.size(); ++bin) {
         if (frame.isTransient) {
@@ -183,8 +189,7 @@ bool PhaseVocoder::detectTransient(const Frame& frame) {
 }
 
 void PhaseVocoder::preserveTransients(Frame& frame, const Frame& prevFrame) {
-    // For transients, we want to preserve the original phase relationships
-    // to maintain sharp attacks
+    // For transients, preserve original phase relationships
     if (!frame.isTransient) return;
 
     const size_t binCount = frame.phase.size();

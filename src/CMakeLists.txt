@@ -1,6 +1,7 @@
 # Find required packages
 find_package(SndFile REQUIRED)
 find_package(PkgConfig REQUIRED)
+pkg_check_modules(FFTW REQUIRED fftw3f)
 
 # Create the core library
 add_library(GranularPlunderphonicsCore STATIC
@@ -10,12 +11,15 @@ add_library(GranularPlunderphonicsCore STATIC
         audio/GrainCloud.cpp
         audio/GrainEngine.cpp
         audio/GrainGenerator.cpp
-        audio/GrainProcessor.cpp
+        audio/LorenzAttractor.cpp
+        audio/DifferentialEquationSolver.cpp
         audio/Resampler.cpp
         audio/StreamingManager.cpp
+        audio/AttractorFactory.cpp
         common/ErrorHandling.cpp
         common/Logger.cpp
         common/ResourceManager.cpp
+        plugin/ParameterManager.cpp
 )
 
 target_include_directories(GranularPlunderphonicsCore
@@ -35,6 +39,9 @@ target_link_libraries(GranularPlunderphonicsCore
         spdlog::spdlog
         SndFile::sndfile
         "${FFTW_ROOT}/lib/libfftw3f.dylib"
+        sdk
+        base
+        pluginterfaces
 )
 
 # Create the VST3 plugin as a module
@@ -42,7 +49,6 @@ add_library(GranularPlunderphonics MODULE
         plugin/GranularPlunderphonicsController.cpp
         plugin/GranularPlunderphonicsEntry.cpp
         plugin/GranularPlunderphonicsProcessor.cpp
-        plugin/ParameterManager.cpp
 )
 
 # Add framework dependencies for macOS
@@ -51,18 +57,12 @@ if(APPLE)
     target_link_libraries(GranularPlunderphonics
             PRIVATE
             GranularPlunderphonicsCore
-            sdk
-            base
-            pluginterfaces
             "-framework CoreFoundation"
     )
 else()
     target_link_libraries(GranularPlunderphonics
             PRIVATE
             GranularPlunderphonicsCore
-            sdk
-            base
-            pluginterfaces
     )
 endif()
 

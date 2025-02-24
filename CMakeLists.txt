@@ -22,8 +22,16 @@ else()
     add_definitions(-DRELEASE=1 -DNDEBUG=1)
 endif()
 
-# Set VST3 SDK path
+# Set VST3 SDK path and options
 set(VST3_SDK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/vst3sdk" CACHE PATH "Path to VST3 SDK")
+set(SMTG_ADD_VST3_HOSTING_SAMPLES OFF CACHE BOOL "Don't build hosting samples")
+set(SMTG_ADD_VST3_PLUGINS_SAMPLES OFF CACHE BOOL "Don't build plugin samples")
+set(SMTG_CREATE_PLUGIN_LINK ON CACHE BOOL "Create symlink for plugins")
+
+# Verify SDK exists
+if(NOT EXISTS ${VST3_SDK_ROOT}/CMakeLists.txt)
+    message(FATAL_ERROR "VST3 SDK not found. Please initialize submodules or specify VST3_SDK_ROOT.")
+endif()
 
 # Find dependencies
 find_package(spdlog REQUIRED)
@@ -33,12 +41,16 @@ pkg_check_modules(FFTW REQUIRED fftw3f)
 # Add explicit link directories
 link_directories(${FFTW_ROOT}/lib)
 
-# VST3 SDK setup
-if(EXISTS ${VST3_SDK_ROOT}/CMakeLists.txt)
-    add_subdirectory(${VST3_SDK_ROOT})
-else()
-    message(FATAL_ERROR "VST3 SDK not found. Please add it as a submodule or specify VST3_SDK_ROOT.")
-endif()
+# VST3 SDK setup - this must come before our own targets
+add_subdirectory(${VST3_SDK_ROOT} vst3sdk)
+
+# Make VST3 SDK headers available
+include_directories(
+        ${VST3_SDK_ROOT}
+        ${VST3_SDK_ROOT}/pluginterfaces
+        ${VST3_SDK_ROOT}/base
+        ${VST3_SDK_ROOT}/public.sdk
+)
 
 # Enable testing
 enable_testing()

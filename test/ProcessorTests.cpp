@@ -3,7 +3,7 @@
 
 using namespace GranularPlunderphonics;
 
-/*
+
  TEST_CASE("Plugin Initialization", "[processor]") {
     auto processor = std::make_unique<GranularPlunderphonicsProcessor>();
     REQUIRE(processor != nullptr);
@@ -96,4 +96,3 @@ TEST_CASE("Audio Pass-through", "[processor]") {
         REQUIRE(outputBufferR[i] == inputBuffer[i]);
     }
 }
-*/
