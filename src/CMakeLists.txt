@@ -1,3 +1,5 @@
+# src/CMakeLists.txt
+
 # Find required packages
 find_package(SndFile REQUIRED)
 find_package(PkgConfig REQUIRED)
@@ -27,11 +29,13 @@ target_include_directories(GranularPlunderphonicsCore
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${VST3_SDK_ROOT}
         "${FFTW_ROOT}/include"
+        ${SAMPLERATE_INCLUDE_DIRS}
 )
 
 target_link_directories(GranularPlunderphonicsCore
         PUBLIC
         "${FFTW_ROOT}/lib"
+        "${SAMPLERATE_ROOT}/lib"
 )
 
 target_link_libraries(GranularPlunderphonicsCore
@@ -39,6 +43,7 @@ target_link_libraries(GranularPlunderphonicsCore
         spdlog::spdlog
         SndFile::sndfile
         "${FFTW_ROOT}/lib/libfftw3f.dylib"
+        "${SAMPLERATE_ROOT}/lib/libsamplerate.dylib"
         sdk
         base
         pluginterfaces

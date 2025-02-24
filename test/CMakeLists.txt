@@ -1,3 +1,5 @@
+# test/CMakeLists.txt
+
 # Find Catch2
 find_package(Catch2 3 REQUIRED)
 
@@ -17,6 +19,9 @@ add_executable(GranularTests
         ParameterTests.cpp
         ProcessorTests.cpp
         ResourceManagerTests.cpp
+        # Add the processor source files directly to the test executable
+        ${CMAKE_SOURCE_DIR}/src/plugin/GranularPlunderphonicsProcessor.cpp
+        ${CMAKE_SOURCE_DIR}/src/plugin/GranularPlunderphonicsController.cpp
 )
 
 target_include_directories(GranularTests
@@ -24,11 +29,13 @@ target_include_directories(GranularTests
         ${CMAKE_SOURCE_DIR}/src
         ${VST3_SDK_ROOT}
         ${FFTW_ROOT}/include
+        ${SAMPLERATE_INCLUDE_DIRS}
 )
 
 target_link_directories(GranularTests
         PRIVATE
         ${FFTW_ROOT}/lib
+        ${SAMPLERATE_ROOT}/lib
 )
 
 if(APPLE)
@@ -42,6 +49,7 @@ if(APPLE)
             pluginterfaces
             SndFile::sndfile
             "${FFTW_ROOT}/lib/libfftw3f.dylib"
+            "${SAMPLERATE_ROOT}/lib/libsamplerate.dylib"
             "-framework CoreFoundation"
     )
 else()
@@ -54,6 +62,7 @@ else()
             pluginterfaces
             SndFile::sndfile
             "${FFTW_ROOT}/lib/libfftw3f.dylib"
+            "${SAMPLERATE_ROOT}/lib/libsamplerate.dylib"
     )
 endif()
 
