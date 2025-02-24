@@ -2,6 +2,7 @@
 #include <catch2/catch_approx.hpp>
 #include "../src/audio/AudioFile.h"
 #include "../src/audio/AudioBuffer.h"
+#include <sndfile.h>
 #include <cmath>
 #include <vector>
 #include <random>
@@ -20,13 +21,29 @@ namespace {
     }
 
     // Helper to write test audio file
-    bool writeTestFile(const std::string& path, 
-                      const std::vector<float>& data,
-                      float sampleRate,
-                      AudioFileFormat format) {
+    bool writeTestFile(const std::string& path,
+                  const std::vector<float>& data,
+                  float sampleRate,
+                  AudioFileFormat format) {
         AudioFile file;
         AudioBuffer buffer(1, data.size());
         buffer.write(0, data.data(), data.size(), 0);
+
+        // Set up AudioFile info
+        AudioFileInfo info;
+        info.numChannels = 1;
+        info.sampleRate = sampleRate;
+        info.numFrames = data.size();
+        info.format = format;
+        info.bitDepth = 32;  // Using 32-bit float
+
+        // Create a temporary AudioFile
+        AudioFile tempFile;
+        if (!buffer.write(0, data.data(), data.size(), 0)) {
+            return false;
+        }
+
+        // Save the file in the requested format
         return file.save(path, format);
     }
 }
@@ -36,12 +53,22 @@ TEST_CASE("Audio File Management Tests", "[audiofile]") {
 
     SECTION("Short Samples (<1s)") {
         // Create 0.5s test file
-        std::vector<float> shortData = createTestTone(440.0f, sampleRate, 
+        const float sampleRate = 44100.0f;
+        std::vector<float> shortData = createTestTone(440.0f, sampleRate,
                                                      static_cast<size_t>(sampleRate * 0.5f));
-        writeTestFile("test_short.wav", shortData, sampleRate, AudioFileFormat::WAV);
+
+        Logger logger("AudioFileTest");
+        logger.info("Creating test file...");
+        bool writeResult = writeTestFile("test_short.wav", shortData, sampleRate, AudioFileFormat::WAV);
+        logger.info(writeResult ? "Test file created successfully" : "Failed to create test file");
 
         AudioFile file;
-        REQUIRE(file.load("test_short.wav"));
+        logger.info("Attempting to load test file...");
+        bool loadResult = file.load("test_short.wav");
+        logger.info(loadResult ? "File loaded successfully" : "Failed to load file");
+
+        REQUIRE(writeResult);  // First verify write succeeded
+        REQUIRE(loadResult);   // Then verify load succeeded
         REQUIRE(file.getInfo().numFrames == shortData.size());
         REQUIRE(file.getInfo().sampleRate == sampleRate);
     }
