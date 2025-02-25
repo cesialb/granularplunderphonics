@@ -7,6 +7,7 @@
 
 #include <string>
 #include "../common/Logger.h"
+#include "GranularParameters.h"
 
 // Include VST3 SDK headers
 #include "base/source/fobject.h"
@@ -28,11 +29,7 @@ namespace Steinberg {
 // Plugin-specific forward declarations
 namespace GranularPlunderphonics {
 
-// Forward declare error codes here
-enum GranularParameters {
-    kBypassId = 1000
-};
-
+    using GranularPlunderphonics::GranularParameterID;
 /**
  * @class GranularPlunderphonicsController
  * @brief Controller implementation for the Granular Plunderphonics VST3 plugin
