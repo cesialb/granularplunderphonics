@@ -103,6 +103,8 @@ std::vector<float> GrainGenerator::getWindow(GrainShapeType shape, size_t size) 
     return window;
 }
 
+    // Fix for calculateWindow in GrainGenerator.cpp, specifically the Gaussian window
+
 std::vector<float> GrainGenerator::calculateWindow(GrainShapeType shape, size_t size) {
     std::vector<float> window(size);
     const double pi = 3.14159265358979323846;
@@ -112,6 +114,8 @@ std::vector<float> GrainGenerator::calculateWindow(GrainShapeType shape, size_t 
             for (size_t i = 0; i < size; ++i) {
                 double phase = (static_cast<double>(i) / (size - 1)) * pi;
                 window[i] = static_cast<float>(std::sin(phase));
+                // Ensure non-negative values
+                window[i] = std::max(0.0f, window[i]);
             }
             break;
         }
@@ -128,21 +132,32 @@ std::vector<float> GrainGenerator::calculateWindow(GrainShapeType shape, size_t 
             for (size_t i = halfSize; i < size; ++i) {
                 window[i] = 1.0f - ((i - halfSize) * increment);
             }
+            // Ensure non-negative values
+            for (auto& val : window) {
+                val = std::max(0.0f, val);
+            }
             break;
         }
 
         case GrainShapeType::Rectangle: {
+            // Fill with exact 1.0f values
             std::fill(window.begin(), window.end(), 1.0f);
             break;
         }
 
-        case GrainShapeType::Gaussian: {
-            double sigma = 0.4;  // Controls the width of the Gaussian
+        case GrainShapeType::Gaussian:
+        default: {
+            // Modify Gaussian window calculation to ensure tapering at edges
+            double sigma = 0.25;  // Reduced from 0.4 to make the curve narrower
             double center = (size - 1) / 2.0;
 
             for (size_t i = 0; i < size; ++i) {
-                double x = (i - center) / (size * sigma);
+                double x = (i - center) / (center * sigma);
                 window[i] = static_cast<float>(std::exp(-0.5 * x * x));
+                // Ensure edges are close to zero
+                if (i == 0 || i == size - 1) {
+                    window[i] = std::min(window[i], 0.05f);
+                }
             }
             break;
         }

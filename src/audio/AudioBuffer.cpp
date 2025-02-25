@@ -8,28 +8,48 @@ namespace GranularPlunderphonics {
         : mBuffer(numChannels)
     {
         mLogger.info(("Creating AudioBuffer with " + std::to_string(numChannels) +
-                    " channels and size " + std::to_string(numSamples)).c_str());  // Added .c_str()
+                    " channels and size " + std::to_string(numSamples)).c_str());
 
         for (auto& channel : mBuffer) {
             channel.resize(numSamples, 0.0f);
         }
     }
 
+    // Move constructor
+    AudioBuffer::AudioBuffer(AudioBuffer&& other) noexcept
+        : mBuffer(std::move(other.mBuffer)),
+          mMutex(),
+          mLogger("AudioBuffer")
+    {
+        // No need to lock the mutex here since we're in the constructor
+        mLogger.info("Move constructor called");
+    }
+
+    // Move assignment operator
+    AudioBuffer& AudioBuffer::operator=(AudioBuffer&& other) noexcept {
+        if (this != &other) {
+            std::lock_guard<std::mutex> lock(mMutex);
+            mBuffer = std::move(other.mBuffer);
+            mLogger.info("Move assignment operator called");
+        }
+        return *this;
+    }
+
     bool AudioBuffer::write(size_t channel, const float* data, size_t numSamples, size_t startPos) {
         if (!isValidChannel(channel)) {
-            mLogger.error(("Invalid channel index: " + std::to_string(channel)).c_str());  // Added .c_str()
+            mLogger.error(("Invalid channel index: " + std::to_string(channel)).c_str());
             return false;
         }
 
         if (!data) {
-            mLogger.error("Null data pointer provided to write");  // String literal is already const char*
+            mLogger.error("Null data pointer provided to write");
             return false;
         }
 
         std::lock_guard<std::mutex> lock(mMutex);
 
         if (startPos + numSamples > mBuffer[channel].size()) {
-            mLogger.error("Write operation exceeds buffer bounds");  // String literal is already const char*
+            mLogger.error("Write operation exceeds buffer bounds");
             return false;
         }
 
@@ -43,8 +63,7 @@ namespace GranularPlunderphonics {
         for (auto& channel : mBuffer) {
             channel.resize(numSamples, 0.0f);
         }
-        mLogger.info(("Buffer resized to " + std::to_string(numSamples) + " samples").c_str());  // Added .c_str()
-    }
+        mLogger.info(("Buffer resized to " + std::to_string(numSamples) + " samples").c_str());    }
 
     void AudioBuffer::clear() {
         std::lock_guard<std::mutex> lock(mMutex);
@@ -87,5 +106,11 @@ namespace GranularPlunderphonics {
         return mBuffer[channel][position];
     }
 
+    const std::vector<float>* AudioBuffer::getChannelData(size_t channel) const {
+        if (!isValidChannel(channel)) {
+            return nullptr;
+        }
+        return &mBuffer[channel];
+    }
 
-}
+} // namespace GranularPlunderphonics

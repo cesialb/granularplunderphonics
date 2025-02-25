@@ -66,6 +66,7 @@ public:
 private:
     double mSampleRate;
     Logger mLogger;
+    bool validateWindow(const std::vector<float>& window) const;
 
     // Cache for window functions
     struct WindowKey {

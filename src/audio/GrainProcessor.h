@@ -26,6 +26,14 @@ struct PhaseVocoderSettings {
     float formantScale{1.0f};      // Formant scaling factor
 };
 
+    struct FFTFrame {
+        std::vector<std::complex<float>> spectrum;
+        std::vector<float> magnitude;
+        std::vector<float> phase;
+        std::vector<float> frequency;
+        bool isTransient;
+    };
+
 struct ProcessingParameters {
     float timeStretch{1.0f};
     float pitchShift{1.0f};
@@ -38,140 +46,126 @@ class PhaseVocoder {
 public:
     PhaseVocoder(size_t fftSize)
         : mFFTSize(fftSize)
-        , mTimeData(nullptr)
-        , mFreqData(nullptr)
-        , mForwardPlan(nullptr)
-        , mInversePlan(nullptr)
-        , mPreviousMagnitudes(fftSize/2 + 1)
-        , mPreviousPhase(fftSize/2 + 1)
-        , mSynthesisPhase(fftSize/2 + 1)
-        , mLogger("PhaseVocoder")
+        , mHopSize(fftSize/4)
+        , mWindow(createAnalysisWindow(fftSize))
     {
-        initializeFFT();
+        mTimeData = fftwf_alloc_real(mFFTSize);
+        mFreqData = reinterpret_cast<std::complex<float>*>(fftwf_alloc_complex(mFFTSize/2 + 1));
+
+        mForwardPlan = fftwf_plan_dft_r2c_1d(mFFTSize, mTimeData,
+            reinterpret_cast<fftwf_complex*>(mFreqData), FFTW_MEASURE);
+        mInversePlan = fftwf_plan_dft_c2r_1d(mFFTSize,
+            reinterpret_cast<fftwf_complex*>(mFreqData), mTimeData, FFTW_MEASURE);
+
+        mLastPhase.resize(mFFTSize/2 + 1, 0.0f);
+        mSynthPhase.resize(mFFTSize/2 + 1, 0.0f);
     }
 
     ~PhaseVocoder() {
-        cleanupFFT();
+        fftwf_destroy_plan(mForwardPlan);
+        fftwf_destroy_plan(mInversePlan);
+        fftwf_free(mTimeData);
+        fftwf_free(mFreqData);
     }
 
-    void processFrame(const float* input, float* output, size_t numSamples, const ProcessingParameters& params) {
-        // Apply window function and perform FFT
+    void processFrame(const float* input, float* output,
+                     size_t numSamples, float pitchShift, float timeStretch) {
+        // Apply analysis window and perform FFT
         for (size_t i = 0; i < mFFTSize; ++i) {
-            float windowVal = 0.5f * (1.0f - std::cos(2.0f * M_PI * i / (mFFTSize - 1)));
-            mTimeData[i] = (i < numSamples) ? input[i] * windowVal : 0.0f;
+            mTimeData[i] = (i < numSamples) ? input[i] * mWindow[i] : 0.0f;
         }
 
         fftwf_execute(mForwardPlan);
 
-        // Process in frequency domain
-        processSpectrum(params);
+        // Convert to polar form and analyze/modify
+        std::vector<float> magnitude(mFFTSize/2 + 1);
+        std::vector<float> phase(mFFTSize/2 + 1);
+        std::vector<float> frequency(mFFTSize/2 + 1);
 
-        // Inverse FFT and apply window
+        const float pi2 = 2.0f * M_PI;
+        const float freqPerBin = static_cast<float>(mSampleRate) / mFFTSize;
+
+        bool isTransient = detectTransients(magnitude);
+
+        for (size_t bin = 0; bin < mFFTSize/2 + 1; ++bin) {
+            // Get magnitude and phase
+            magnitude[bin] = std::abs(mFreqData[bin]);
+            phase[bin] = std::arg(mFreqData[bin]);
+
+            // Phase unwrapping and frequency estimation
+            float phaseDiff = phase[bin] - mLastPhase[bin];
+            phaseDiff = phaseDiff - pi2 * std::round(phaseDiff / pi2);
+
+            // True frequency
+            float freq = (phaseDiff * mSampleRate / mHopSize) +
+                        (bin * freqPerBin);
+
+            // Pitch shifting
+            if (!isTransient) {
+                mSynthPhase[bin] += (freq * pitchShift * timeStretch * mHopSize / mSampleRate);
+                mSynthPhase[bin] = std::fmod(mSynthPhase[bin], pi2);
+            } else {
+                // Preserve transient phase relationships
+                mSynthPhase[bin] = phase[bin];
+            }
+
+            // Back to rectangular form
+            mFreqData[bin] = std::polar(magnitude[bin], mSynthPhase[bin]);
+            mLastPhase[bin] = phase[bin];
+        }
+
+        // Inverse FFT
         fftwf_execute(mInversePlan);
 
-        // Copy to output with normalization
-        float normFactor = 1.0f / (mFFTSize * 0.5f);
+        // Apply synthesis window and scale
+        const float scale = 1.0f / (mFFTSize * 0.5f);
         for (size_t i = 0; i < numSamples; ++i) {
-            float windowVal = 0.5f * (1.0f - std::cos(2.0f * M_PI * i / (mFFTSize - 1)));
-            output[i] = mTimeData[i] * windowVal * normFactor;
+            output[i] = mTimeData[i] * mWindow[i] * scale;
         }
     }
 
 private:
-    void initializeFFT() {
-        mTimeData = reinterpret_cast<float*>(fftwf_malloc(sizeof(float) * mFFTSize));
-        mFreqData = reinterpret_cast<fftwf_complex*>(
-            fftwf_malloc(sizeof(fftwf_complex) * (mFFTSize/2 + 1)));
+    bool detectTransients(const std::vector<float>& magnitude) {
+        float currentEnergy = 0.0f;
+        float spectralFlux = 0.0f;
 
-        mForwardPlan = fftwf_plan_dft_r2c_1d(mFFTSize, mTimeData, mFreqData, FFTW_MEASURE);
-        mInversePlan = fftwf_plan_dft_c2r_1d(mFFTSize, mFreqData, mTimeData, FFTW_MEASURE);
-    }
+        for (size_t bin = 0; bin < magnitude.size(); ++bin) {
+            float mag = magnitude[bin];
+            currentEnergy += mag * mag;
 
-    void cleanupFFT() {
-        if (mForwardPlan) fftwf_destroy_plan(mForwardPlan);
-        if (mInversePlan) fftwf_destroy_plan(mInversePlan);
-        if (mTimeData) fftwf_free(mTimeData);
-        if (mFreqData) fftwf_free(mFreqData);
-    }
-
-    void processSpectrum(const ProcessingParameters& params) {
-        const size_t binCount = mFFTSize/2 + 1;
-        const float pi2 = 2.0f * M_PI;
-
-        std::vector<bool> isLockedPhase(binCount, false);
-        if (params.vocoderSettings.phaseLocking) {
-            detectTransients(binCount, params.vocoderSettings.transientThreshold, isLockedPhase);
-        }
-
-        for (size_t bin = 0; bin < binCount; ++bin) {
-            // Calculate magnitude and phase
-            float real = mFreqData[bin][0];
-            float imag = mFreqData[bin][1];
-            float magnitude = std::sqrt(real * real + imag * imag);
-            float phase = std::atan2(imag, real);
-
-            // Phase processing
-            float phaseDiff = phase - mPreviousPhase[bin];
-            phaseDiff = phaseDiff - pi2 * std::round(phaseDiff / pi2);
-
-            float omega = pi2 * bin * params.vocoderSettings.analysisHopSize / mFFTSize;
-            float trueFreq = omega + phaseDiff;
-
-            // Phase synthesis
-            float newPhase;
-            if (isLockedPhase[bin]) {
-                newPhase = phase;
-            } else {
-                newPhase = mSynthesisPhase[bin] +
-                          trueFreq * params.pitchShift * params.timeStretch;
-            }
-
-            // Formant preservation
-            if (params.vocoderSettings.preserveFormants) {
-                float formantShift = params.formantShift;
-                size_t formantBin = static_cast<size_t>(bin / formantShift);
-                if (formantBin < binCount) {
-                    magnitude *= mPreviousMagnitudes[formantBin] /
-                               (mPreviousMagnitudes[bin] + 1e-6f);
-                }
-            }
-
-            // Store current values for next frame
-            mPreviousMagnitudes[bin] = magnitude;
-            mPreviousPhase[bin] = phase;
-            mSynthesisPhase[bin] = newPhase;
-
-            // Convert back to rectangular form
-            mFreqData[bin][0] = magnitude * std::cos(newPhase);
-            mFreqData[bin][1] = magnitude * std::sin(newPhase);
-        }
-    }
-
-    void detectTransients(size_t binCount, float threshold, std::vector<bool>& isLockedPhase) {
-        float flux = 0.0f;
-        for (size_t bin = 0; bin < binCount; ++bin) {
-            float magnitude = std::sqrt(mFreqData[bin][0] * mFreqData[bin][0] +
-                                      mFreqData[bin][1] * mFreqData[bin][1]);
-            float diff = magnitude - mPreviousMagnitudes[bin];
-            if (diff > 0) {
-                flux += diff;
+            if (bin < mLastMagnitude.size()) {
+                float diff = mag - mLastMagnitude[bin];
+                if (diff > 0) spectralFlux += diff;
             }
         }
 
-        if (flux > threshold) {
-            std::fill(isLockedPhase.begin(), isLockedPhase.end(), true);
+        mLastMagnitude = magnitude;
+        return (spectralFlux / std::sqrt(currentEnergy) > mTransientThreshold);
+    }
+
+    std::vector<float> createAnalysisWindow(size_t size) {
+        std::vector<float> window(size);
+        // Hann window for good frequency resolution
+        for (size_t i = 0; i < size; ++i) {
+            window[i] = 0.5f * (1.0f - std::cos(2.0f * M_PI * i / (size - 1)));
         }
+        return window;
     }
 
     size_t mFFTSize;
+    size_t mHopSize;
+    float mSampleRate{44100.0f};
+    float mTransientThreshold{0.2f};
+
+    std::vector<float> mWindow;
+    std::vector<float> mLastPhase;
+    std::vector<float> mSynthPhase;
+    std::vector<float> mLastMagnitude;
+
     float* mTimeData;
-    fftwf_complex* mFreqData;
+    std::complex<float>* mFreqData;
     fftwf_plan mForwardPlan;
     fftwf_plan mInversePlan;
-    std::vector<float> mPreviousMagnitudes;
-    std::vector<float> mPreviousPhase;
-    std::vector<float> mSynthesisPhase;
-    Logger mLogger;
 };
 
 class GrainProcessor {
@@ -189,37 +183,54 @@ public:
             return;
         }
 
-        // Process grain using phase vocoder
+        // Calculate output size for time stretching
+        size_t outputSize = static_cast<size_t>(grain.getNumSamples() * params.timeStretch);
+        outputSize = std::max(outputSize, size_t(1));  // Ensure non-zero size
+
+        // Create temporary buffers
         std::vector<float> inputBuffer(mFFTSize);
-        std::vector<float> outputBuffer(grain.getNumSamples());
+        std::vector<float> outputBuffer(outputSize);
+        std::vector<float> overlapAdd(outputSize, 0.0f);
 
         // Process in overlapping frames
         size_t hopSize = mFFTSize / 4;
-        for (size_t i = 0; i < grain.getNumSamples(); i += hopSize) {
-            // Copy grain data to input buffer
-            for (size_t j = 0; j < mFFTSize; ++j) {
-                size_t grainPos = i + j;
-                inputBuffer[j] = (grainPos < grain.getNumSamples()) ?
-                    grain.getSample(0, grainPos) : 0.0f;
+        size_t position = 0;
+
+        while (position < outputSize) {
+            // Get input frame
+            size_t inputPos = static_cast<size_t>(position / params.timeStretch);
+            for (size_t i = 0; i < mFFTSize; ++i) {
+                size_t readPos = inputPos + i;
+                inputBuffer[i] = (readPos < grain.getNumSamples()) ?
+                    grain.getSample(0, readPos) : 0.0f;
             }
 
             // Process frame
-            std::vector<float> frameOutput(mFFTSize);
-            mVocoder->processFrame(inputBuffer.data(), frameOutput.data(), mFFTSize, params);
+            std::vector<float> processedFrame(mFFTSize);
+            mVocoder->processFrame(inputBuffer.data(), processedFrame.data(),
+                                 mFFTSize, params.pitchShift, params.timeStretch);
 
             // Overlap-add to output
-            for (size_t j = 0; j < mFFTSize; ++j) {
-                size_t outputPos = i + j;
-                if (outputPos < grain.getNumSamples()) {
-                    outputBuffer[outputPos] += frameOutput[j];
+            for (size_t i = 0; i < mFFTSize; ++i) {
+                size_t writePos = position + i;
+                if (writePos < outputSize) {
+                    overlapAdd[writePos] += processedFrame[i];
                 }
             }
+
+            position += hopSize;
         }
 
-        // Write processed data back to grain
-        for (size_t i = 0; i < grain.getNumSamples(); ++i) {
-            grain.write(0, &outputBuffer[i], 1, i);
+        // Create new buffer with correct size
+        AudioBuffer newGrain(grain.getNumChannels(), outputSize);
+
+        // Write processed audio to output
+        for (size_t i = 0; i < outputSize; ++i) {
+            newGrain.write(0, &overlapAdd[i], 1, i);
         }
+
+        // Copy processed audio back to input buffer
+        grain = std::move(newGrain);
     }
 
 private:

@@ -59,45 +59,55 @@ tresult PLUGIN_API GranularPlunderphonicsProcessor::setActive(TBool state)
 }
 
 //------------------------------------------------------------------------
-tresult PLUGIN_API GranularPlunderphonicsProcessor::process(ProcessData& data)
-{
-    // Process parameter changes
-    if (data.inputParameterChanges) {
-        processParameterChanges(data.inputParameterChanges);
-    }
-
-    // Skip processing if there's no audio data or if bypassed
-    if (!data.numSamples || mBypass) {
-        return kResultOk;
-    }
-
-    // Check for valid inputs/outputs
-    if (data.numInputs == 0 || data.numOutputs == 0) {
-        return kResultOk;
-    }
-
-    // Get audio buffers
-    AudioBusBuffers& inputBus = data.inputs[0];
-    AudioBusBuffers& outputBus = data.outputs[0];
-
-    // Check channel configuration
-    if (inputBus.numChannels == 0 || outputBus.numChannels == 0) {
-        return kResultOk;
-    }
-
-    // Process audio
-    // For now, just copy input to output (bypass mode)
-    for (int32 channel = 0; channel < inputBus.numChannels && channel < outputBus.numChannels; channel++) {
-        float* in = inputBus.channelBuffers32[channel];
-        float* out = outputBus.channelBuffers32[channel];
-
-        if (in && out) {
-            memcpy(out, in, data.numSamples * sizeof(float));
+    tresult PLUGIN_API GranularPlunderphonicsProcessor::process(ProcessData& data) {
+        // Process parameter changes
+        if (data.inputParameterChanges) {
+            processParameterChanges(data.inputParameterChanges);
         }
-    }
 
-    return kResultOk;
-}
+        // Skip processing if there's no audio data or if bypassed
+        if (!data.numSamples || mBypass) {
+            return kResultOk;
+        }
+
+        // Check for valid inputs/outputs
+        if (data.numInputs == 0 || data.numOutputs == 0) {
+            return kResultOk;
+        }
+
+        // Get audio buffers
+        AudioBusBuffers& inputBus = data.inputs[0];
+        AudioBusBuffers& outputBus = data.outputs[0];
+
+        // Check channel configuration
+        if (inputBus.numChannels == 0 || outputBus.numChannels == 0) {
+            return kResultOk;
+        }
+
+        // Process audio - simple pass-through
+        for (int32 channel = 0; channel < inputBus.numChannels && channel < outputBus.numChannels; channel++) {
+            float* in = inputBus.channelBuffers32[channel];
+            float* out = outputBus.channelBuffers32[channel];
+
+            if (in && out) {
+                // Explicitly copy each sample
+                for (int32 sample = 0; sample < data.numSamples; ++sample) {
+                    out[sample] = in[sample];
+                }
+            }
+        }
+
+        // If we have a stereo output but mono input, copy the first channel to the second
+        if (outputBus.numChannels > 1 && inputBus.numChannels == 1) {
+            if (outputBus.channelBuffers32[0] && outputBus.channelBuffers32[1]) {
+                for (int32 sample = 0; sample < data.numSamples; ++sample) {
+                    outputBus.channelBuffers32[1][sample] = outputBus.channelBuffers32[0][sample];
+                }
+            }
+        }
+
+        return kResultOk;
+    }
 
     // Update this implementation in GranularPlunderphonicsProcessor.cpp
     void GranularPlunderphonicsProcessor::processParameterChanges(::Steinberg::Vst::IParameterChanges* paramChanges)
@@ -109,7 +119,7 @@ tresult PLUGIN_API GranularPlunderphonicsProcessor::process(ProcessData& data)
         int32 numParamsChanged = paramChanges->getParameterCount();
 
         // For each parameter change
-        for (int32 i = 0; i < numParamsChanged; i++) {
+        for (int32 i = 0; i < numParamsChanged; ++i) {
             ::Steinberg::Vst::IParamValueQueue* paramQueue = paramChanges->getParameterData(i);
             if (!paramQueue) {
                 continue;

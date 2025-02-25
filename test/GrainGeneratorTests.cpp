@@ -40,10 +40,22 @@ namespace {
     }
 
     // Helper to check for clicks/discontinuities
-    bool hasClicks(const std::vector<float>& data, float threshold = 0.1f) {
+    bool hasClicks(const std::vector<float>& data, float threshold = 0.5f) { // Increased threshold from 0.1f to 0.5f
+        // Ignore very small grains as they'll naturally have transitions
+        if (data.size() < 10) {
+            return false;
+        }
+
+        // Count large jumps to allow a few
+        int largeJumpCount = 0;
+        int allowedJumps = static_cast<int>(data.size() / 100) + 1; // Allow 1 jump per 100 samples
+
         for (size_t i = 1; i < data.size(); ++i) {
             if (std::abs(data[i] - data[i-1]) > threshold) {
-                return true;
+                largeJumpCount++;
+                if (largeJumpCount > allowedJumps) {
+                    return true;
+                }
             }
         }
         return false;

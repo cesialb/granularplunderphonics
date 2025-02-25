@@ -11,6 +11,12 @@ namespace GranularPlunderphonics {
     public:
         AudioBuffer(size_t numChannels = 2, size_t numSamples = 0);
 
+        // Move constructor
+        AudioBuffer(AudioBuffer&& other) noexcept;
+
+        // Move assignment operator
+        AudioBuffer& operator=(AudioBuffer&& other) noexcept;
+
         size_t getNumChannels() const { return mBuffer.size(); }
         size_t getNumSamples() const { return mBuffer.empty() ? 0 : mBuffer[0].size(); }
         size_t getSize() const { return getNumSamples(); }
