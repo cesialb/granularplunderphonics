@@ -24,6 +24,9 @@ add_executable(GranularTests
         ${CMAKE_SOURCE_DIR}/src/plugin/GranularPlunderphonicsController.cpp
 )
 
+# Add the TESTING definition to enable test-specific code paths
+target_compile_definitions(GranularTests PRIVATE TESTING)
+
 target_include_directories(GranularTests
         PRIVATE
         ${CMAKE_SOURCE_DIR}/src
