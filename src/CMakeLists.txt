@@ -18,6 +18,7 @@ add_library(GranularPlunderphonicsCore STATIC
         audio/Resampler.cpp
         audio/StreamingManager.cpp
         audio/AttractorFactory.cpp
+        audio/ModulationMatrix.cpp  # Add this line
         common/ErrorHandling.cpp
         common/Logger.cpp
         common/ResourceManager.cpp

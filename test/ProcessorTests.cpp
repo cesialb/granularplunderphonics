@@ -5,11 +5,11 @@
 using namespace GranularPlunderphonics;
 
 // Helper function to properly initialize processor test data
-void setupProcessData(Steinberg::Vst::ProcessData& data,
-                      Steinberg::Vst::AudioBusBuffers& inputBus,
-                      Steinberg::Vst::AudioBusBuffers& outputBus,
+void setupProcessData(::Steinberg::Vst::ProcessData& data,
+                      ::Steinberg::Vst::AudioBusBuffers& inputBus,
+                      ::Steinberg::Vst::AudioBusBuffers& outputBus,
                       float* inputBuffer, float* outputBuffer,
-                      int32 numSamples) {
+                      ::Steinberg::int32 numSamples) {
     // Setup the input bus
     inputBus.numChannels = 1;
     float* inputChannels[1] = { inputBuffer };
@@ -33,7 +33,7 @@ TEST_CASE("Plugin Initialization", "[processor]") {
     REQUIRE(processor != nullptr);
 
     auto result = processor->initialize(nullptr);
-    REQUIRE(result == Steinberg::kResultOk);
+    REQUIRE(result == ::Steinberg::kResultOk);
 }
 
 TEST_CASE("Audio Processing", "[processor]") {
@@ -46,9 +46,9 @@ TEST_CASE("Audio Processing", "[processor]") {
     std::vector<float> outputBuffer(blockSize, 0.0f); // Clear output buffer
 
     // Manually setup ProcessData
-    Steinberg::Vst::AudioBusBuffers inputBus;
-    Steinberg::Vst::AudioBusBuffers outputBus;
-    Steinberg::Vst::ProcessData data;
+    ::Steinberg::Vst::AudioBusBuffers inputBus;
+    ::Steinberg::Vst::AudioBusBuffers outputBus;
+    ::Steinberg::Vst::ProcessData data;
 
     // Setup input bus
     inputBus.numChannels = 1;
@@ -72,7 +72,7 @@ TEST_CASE("Audio Processing", "[processor]") {
 
     // Process audio
     auto result = processor->process(data);
-    REQUIRE(result == Steinberg::kResultOk);
+    REQUIRE(result == ::Steinberg::kResultOk);
 
     // Check if at least one sample was transferred - being more lenient
     bool dataTransferred = false;
@@ -100,11 +100,11 @@ TEST_CASE("Channel Configuration", "[processor]") {
     processor->initialize(nullptr);
 
     // Test mono input to stereo output configuration
-    Steinberg::Vst::SpeakerArrangement inputs[1] = { Steinberg::Vst::SpeakerArr::kMono };
-    Steinberg::Vst::SpeakerArrangement outputs[1] = { Steinberg::Vst::SpeakerArr::kStereo };
+    ::Steinberg::Vst::SpeakerArrangement inputs[1] = { ::Steinberg::Vst::SpeakerArr::kMono };
+    ::Steinberg::Vst::SpeakerArrangement outputs[1] = { ::Steinberg::Vst::SpeakerArr::kStereo };
 
     auto result = processor->setBusArrangements(inputs, 1, outputs, 1);
-    REQUIRE(result == Steinberg::kResultOk);
+    REQUIRE(result == ::Steinberg::kResultOk);
 }
 
 TEST_CASE("Resource Cleanup", "[processor]") {
@@ -113,7 +113,7 @@ TEST_CASE("Resource Cleanup", "[processor]") {
 
     // Test proper cleanup
     auto result = processor->terminate();
-    REQUIRE(result == Steinberg::kResultOk);
+    REQUIRE(result == ::Steinberg::kResultOk);
 }
 
 TEST_CASE("Audio Pass-through", "[processor]") {
@@ -127,9 +127,9 @@ TEST_CASE("Audio Pass-through", "[processor]") {
     std::vector<float> outputBufferR(blockSize, 0.0f);
 
     // Setup ProcessData
-    Steinberg::Vst::ProcessData data;
-    Steinberg::Vst::AudioBusBuffers inputBus;
-    Steinberg::Vst::AudioBusBuffers outputBus;
+    ::Steinberg::Vst::ProcessData data;
+    ::Steinberg::Vst::AudioBusBuffers inputBus;
+    ::Steinberg::Vst::AudioBusBuffers outputBus;
 
     // Set up for stereo out
     inputBus.numChannels = 1;
@@ -148,7 +148,7 @@ TEST_CASE("Audio Pass-through", "[processor]") {
 
     // Process audio
     auto result = processor->process(data);
-    REQUIRE(result == Steinberg::kResultOk);
+    REQUIRE(result == ::Steinberg::kResultOk);
 
     // Verify at least one sample correctly passed through to left channel
     bool dataTransferredL = false;
