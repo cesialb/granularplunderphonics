@@ -5,6 +5,9 @@ find_package(SndFile REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(FFTW REQUIRED fftw3f)
 
+# Find JUCE for UI
+find_package(JUCE REQUIRED)
+
 # Create the core library
 add_library(GranularPlunderphonicsCore STATIC
         audio/AudioBuffer.cpp
@@ -18,11 +21,16 @@ add_library(GranularPlunderphonicsCore STATIC
         audio/Resampler.cpp
         audio/StreamingManager.cpp
         audio/AttractorFactory.cpp
-        audio/ModulationMatrix.cpp  # Add this line
+        audio/ModulationMatrix.cpp
         common/ErrorHandling.cpp
         common/Logger.cpp
         common/ResourceManager.cpp
         plugin/ParameterManager.cpp
+        # UI components
+        GranularPlunderphonicsEditor.cpp
+        LookAndFeel/GranularLookAndFeel.cpp
+        Components/HeaderPanel.cpp
+        Components/MainPanel.cpp
 )
 
 target_include_directories(GranularPlunderphonicsCore
@@ -48,6 +56,11 @@ target_link_libraries(GranularPlunderphonicsCore
         sdk
         base
         pluginterfaces
+        juce::juce_gui_basics
+        juce::juce_gui_extra
+        juce::juce_audio_basics
+        juce::juce_audio_processors
+        juce::juce_dsp
 )
 
 # Create the VST3 plugin as a module
