@@ -108,6 +108,12 @@ public:
     const AudioFileInfo& getInfo() const { return mInfo; }
     size_t readBuffer(float* buffer, size_t numFrames, size_t position = 0);
 
+    /**
+ * @brief Check if an audio file is loaded
+ * @return true if a file is loaded, false otherwise
+ */
+    bool isLoaded() const { return mIsLoaded; }
+
 private:
     /**
      * @brief Detect audio format from file extension

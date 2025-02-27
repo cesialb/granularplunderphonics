@@ -53,7 +53,7 @@ namespace GranularPlunderphonics {
         // First call parent implementation
         tresult result = AudioEffect::initialize(context);
         if (result != kResultOk) {
-            mLogger.error(("Parent initialize failed with result=" + std::to_string(result))
+            mLogger.error("Parent initialize failed with result=" + std::to_string(result));
             return result;
         }
         mLogger.info("Parent initialize succeeded");

@@ -143,13 +143,90 @@ bool StreamingManager::fillBuffer(std::shared_ptr<AudioBuffer> buffer, size_t po
         return false;
     }
 
-    // This is where we'll implement the actual audio file reading
-    // For now, just fill with silence
-    for (size_t channel = 0; channel < buffer->getNumChannels(); ++channel) {
-        std::vector<float> silence(mBufferSize, 0.0f);
-        if (!buffer->write(channel, silence.data(), mBufferSize, 0)) {
-            mLogger.error("Failed to write silence to buffer");
+    // Check if we have a valid audio file to read from
+    if (!mAudioFile || !mAudioFile->isLoaded()) {
+        mLogger.error("No audio file loaded for streaming");
+        return false;
+    }
+
+    // Make sure position is within file bounds
+    size_t fileFrames = mAudioFile->getInfo().numFrames;
+    if (position >= fileFrames) {
+        mLogger.warn("Stream position " + std::to_string(position) +
+                    " exceeds file length " + std::to_string(fileFrames));
+
+        // Fill with silence
+        for (size_t channel = 0; channel < buffer->getNumChannels(); ++channel) {
+            std::vector<float> silence(mBufferSize, 0.0f);
+            if (!buffer->write(channel, silence.data(), mBufferSize, 0)) {
+                mLogger.error("Failed to write silence to buffer");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Calculate how much we can read from the file
+    size_t framesToRead = std::min(mBufferSize, fileFrames - position);
+
+    // Read data from the audio file
+    std::vector<float> interleavedData(framesToRead * mAudioFile->getInfo().numChannels);
+    size_t framesRead = mAudioFile->readBuffer(interleavedData.data(), framesToRead, position);
+
+    if (framesRead < framesToRead) {
+        mLogger.warn("Read fewer frames than requested: " +
+                    std::to_string(framesRead) + " of " +
+                    std::to_string(framesToRead));
+    }
+
+    // Handle the case where we couldn't read any frames
+    if (framesRead == 0) {
+        // Fill with silence
+        for (size_t channel = 0; channel < buffer->getNumChannels(); ++channel) {
+            std::vector<float> silence(mBufferSize, 0.0f);
+            if (!buffer->write(channel, silence.data(), mBufferSize, 0)) {
+                mLogger.error("Failed to write silence to buffer");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Deinterleave the data and write to buffer
+    size_t numChannels = std::min(buffer->getNumChannels(), mAudioFile->getInfo().numChannels);
+
+    for (size_t ch = 0; ch < numChannels; ++ch) {
+        std::vector<float> channelData(framesRead);
+
+        // Deinterleave
+        for (size_t i = 0; i < framesRead; ++i) {
+            channelData[i] = interleavedData[i * mAudioFile->getInfo().numChannels + ch];
+        }
+
+        // Write to buffer
+        if (!buffer->write(ch, channelData.data(), framesRead, 0)) {
+            mLogger.error("Failed to write data to buffer for channel " + std::to_string(ch));
             return false;
+        }
+    }
+
+    // If the buffer has more channels than the file, fill remaining channels with silence
+    for (size_t ch = numChannels; ch < buffer->getNumChannels(); ++ch) {
+        std::vector<float> silence(mBufferSize, 0.0f);
+        if (!buffer->write(ch, silence.data(), mBufferSize, 0)) {
+            mLogger.error("Failed to write silence to remaining channels");
+            return false;
+        }
+    }
+
+    // If we read fewer frames than the buffer size, fill the rest with silence
+    if (framesRead < mBufferSize) {
+        for (size_t ch = 0; ch < buffer->getNumChannels(); ++ch) {
+            std::vector<float> silence(mBufferSize - framesRead, 0.0f);
+            if (!buffer->write(ch, silence.data(), mBufferSize - framesRead, framesRead)) {
+                mLogger.error("Failed to pad buffer with silence");
+                return false;
+            }
         }
     }
 

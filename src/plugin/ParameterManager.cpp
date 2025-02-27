@@ -6,9 +6,7 @@
 #include "ParameterManager.h"
 #include <iomanip>
 #include <sstream>
-#include <cstring>
 #include <algorithm>
-#include <limits>
 
 namespace GranularPlunderphonics {
 
@@ -674,7 +672,7 @@ ParameterManager::~ParameterManager()
     // No logger call needed during destruction
 }
 
-bool ParameterManager::registerParameter(std::shared_ptr<Parameter> parameter)
+    bool ParameterManager::registerParameter(std::shared_ptr<Parameter> parameter)
 {
     if (!parameter) {
         mLogger.error("Attempted to register null parameter");
@@ -687,13 +685,13 @@ bool ParameterManager::registerParameter(std::shared_ptr<Parameter> parameter)
 
     // Check if parameter with this ID already exists
     if (mParameters.find(id) != mParameters.end()) {
-        mLogger.error("Parameter with ID already registered");
+        mLogger.error("Parameter with ID " + std::to_string(id) + " already registered");
         return false;
     }
 
     // Register the parameter
     mParameters[id] = parameter;
-    mLogger.debug("Registered parameter");
+    mLogger.info("Registered parameter with ID " + std::to_string(id));
 
     return true;
 }

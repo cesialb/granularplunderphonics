@@ -1,8 +1,6 @@
 #pragma once
 
 #include "ChaoticBase.h"
-#include <string>
-#include <memory>
 
 namespace GranularPlunderphonics {
 

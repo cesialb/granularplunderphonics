@@ -38,11 +38,12 @@ namespace GranularPlunderphonics {
         spdlog::shutdown();
     }
 
-    void Logger::trace(const char* msg) const { mLogger->trace(msg); }
-    void Logger::debug(const char* msg) const { mLogger->debug(msg); }
-    void Logger::info(const char* msg) const { mLogger->info(msg); }
-    void Logger::warn(const char* msg) const { mLogger->warn(msg); }
-    void Logger::error(const char* msg) const { mLogger->error(msg); }
-    void Logger::critical(const char* msg) const { mLogger->critical(msg); }
+    // Updated implementations to accept std::string directly
+    void Logger::trace(const std::string& msg) const { mLogger->trace(msg); }
+    void Logger::debug(const std::string& msg) const { mLogger->debug(msg); }
+    void Logger::info(const std::string& msg) const { mLogger->info(msg); }
+    void Logger::warn(const std::string& msg) const { mLogger->warn(msg); }
+    void Logger::error(const std::string& msg) const { mLogger->error(msg); }
+    void Logger::critical(const std::string& msg) const { mLogger->critical(msg); }
 
 } // namespace GranularPlunderphonics

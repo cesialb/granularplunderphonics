@@ -11,6 +11,7 @@
 #include <atomic>
 #include <queue>
 #include "AudioBuffer.h"
+#include "AudioFile.h"
 #include "../common/Logger.h"
 #include "../common/ErrorHandling.h"
 
@@ -78,12 +79,27 @@ public:
      */
     size_t getCurrentPosition() const { return mCurrentPosition; }
 
+    bool setAudioFile(std::shared_ptr<AudioFile> audioFile) {
+        if (!audioFile || !audioFile->isLoaded()) {
+            mLogger.error("Invalid audio file provided");
+            return false;
+        }
+
+        std::lock_guard<std::mutex> lock(mBufferMutex);
+        mAudioFile = audioFile;
+        mCurrentPosition = 0;
+        return true;
+    }
+
+
+
 private:
     size_t mBufferSize;                      // Size of each buffer
     size_t mNumBuffers;                      // Number of buffers in pool
     double mSampleRate;                      // Current sample rate
     std::atomic<bool> mIsStreaming;          // Streaming state
     std::atomic<size_t> mCurrentPosition;    // Current streaming position
+    std::shared_ptr<AudioFile> mAudioFile;
 
     // Buffer pool management
     std::queue<std::shared_ptr<AudioBuffer>> mFreeBuffers;
