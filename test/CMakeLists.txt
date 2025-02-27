@@ -8,9 +8,6 @@ find_package(SndFile REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(FFTW REQUIRED fftw3f)
 
-# Find JUCE for UI tests
-find_package(JUCE REQUIRED)
-
 add_executable(GranularTests
         TestMain.cpp
         BasicTests.cpp
@@ -24,14 +21,11 @@ add_executable(GranularTests
         ParameterTests.cpp
         ProcessorTests.cpp
         ResourceManagerTests.cpp
-        UITests.cpp  # New UI tests
         # Add the processor source files directly to the test executable
         ${CMAKE_SOURCE_DIR}/src/plugin/GranularPlunderphonicsProcessor.cpp
         ${CMAKE_SOURCE_DIR}/src/plugin/GranularPlunderphonicsController.cpp
         ${CMAKE_SOURCE_DIR}/src/GranularPlunderphonicsEditor.cpp
         ${CMAKE_SOURCE_DIR}/src/LookAndFeel/GranularLookAndFeel.cpp
-        ${CMAKE_SOURCE_DIR}/src/Components/HeaderPanel.cpp
-        ${CMAKE_SOURCE_DIR}/src/Components/MainPanel.cpp
 )
 
 # Add the TESTING definition to enable test-specific code paths

@@ -2,7 +2,6 @@
 #pragma once
 
 #include "pluginterfaces/base/funknown.h"
-#include "pluginterfaces/base/fplatform.h"
 
 namespace GranularPlunderphonics {
 

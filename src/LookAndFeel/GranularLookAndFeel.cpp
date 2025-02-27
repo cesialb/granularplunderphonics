@@ -13,7 +13,7 @@ GranularLookAndFeel::GranularLookAndFeel()
 
     // Set default colors for various component types
     setDarkMode(true);
-
+}
 
 juce::Colour GranularLookAndFeel::getBackgroundColor() const
 {
@@ -323,8 +323,6 @@ void GranularLookAndFeel::drawGroupComponentOutline(juce::Graphics& g, int width
     }
 }
 
-} // namespace GranularPlunderphonics
-
 void GranularLookAndFeel::setDarkMode(bool darkMode)
 {
     mDarkMode = darkMode;
@@ -429,3 +427,5 @@ void GranularLookAndFeel::setDarkMode(bool darkMode)
         setColour(juce::GroupComponent::textColourId, mLightText);
     }
 };
+
+} // namespace GranularPlunderphonics

@@ -5,9 +5,6 @@ find_package(SndFile REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(FFTW REQUIRED fftw3f)
 
-# Find JUCE for UI
-find_package(JUCE REQUIRED)
-
 # Create the core library
 add_library(GranularPlunderphonicsCore STATIC
         audio/AudioBuffer.cpp
@@ -29,8 +26,6 @@ add_library(GranularPlunderphonicsCore STATIC
         # UI components
         GranularPlunderphonicsEditor.cpp
         LookAndFeel/GranularLookAndFeel.cpp
-        Components/HeaderPanel.cpp
-        Components/MainPanel.cpp
 )
 
 target_include_directories(GranularPlunderphonicsCore

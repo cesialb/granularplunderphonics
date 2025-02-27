@@ -44,7 +44,7 @@ struct ProcessingParameters {
 
 class PhaseVocoder {
 public:
-    PhaseVocoder(size_t fftSize)
+    explicit PhaseVocoder(size_t fftSize)
         : mFFTSize(fftSize)
         , mHopSize(fftSize/4)
         , mWindow(createAnalysisWindow(fftSize))
@@ -143,7 +143,7 @@ private:
         return (spectralFlux / std::sqrt(currentEnergy) > mTransientThreshold);
     }
 
-    std::vector<float> createAnalysisWindow(size_t size) {
+    static std::vector<float> createAnalysisWindow(size_t size) {
         std::vector<float> window(size);
         // Hann window for good frequency resolution
         for (size_t i = 0; i < size; ++i) {
@@ -170,12 +170,12 @@ private:
 
 class GrainProcessor {
 public:
-    GrainProcessor(size_t fftSize)
+    explicit GrainProcessor(size_t fftSize)
         : mVocoder(std::make_unique<PhaseVocoder>(fftSize))
         , mFFTSize(fftSize)
         , mLogger("GrainProcessor")
     {
-        mLogger.info(("GrainProcessor initialized with FFT size " + std::to_string(fftSize)).c_str());
+        mLogger.info("GrainProcessor initialized with FFT size " + std::to_string(fftSize));
     }
 
     void processGrain(AudioBuffer& grain, const ProcessingParameters& params) {

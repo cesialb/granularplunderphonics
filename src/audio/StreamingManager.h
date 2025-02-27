@@ -5,15 +5,12 @@
 
 #pragma once
 
-#include <memory>
-#include <vector>
 #include <mutex>
 #include <atomic>
 #include <queue>
 #include "AudioBuffer.h"
 #include "AudioFile.h"
 #include "../common/Logger.h"
-#include "../common/ErrorHandling.h"
 
 namespace GranularPlunderphonics {
 
@@ -28,7 +25,7 @@ public:
      * @param bufferSize Size of each streaming buffer in samples
      * @param numBuffers Number of buffers in the pool
      */
-    StreamingManager(size_t bufferSize = 8192, size_t numBuffers = 4);
+    explicit StreamingManager(size_t bufferSize = 8192, size_t numBuffers = 4);
 
     /**
      * @brief Destructor
@@ -65,7 +62,7 @@ public:
      * @brief Return a buffer to the pool
      * @param buffer Buffer to return
      */
-    void returnBuffer(std::shared_ptr<AudioBuffer> buffer);
+    void returnBuffer(const std::shared_ptr<AudioBuffer> &buffer);
 
     /**
      * @brief Check if streaming is active
@@ -79,7 +76,7 @@ public:
      */
     size_t getCurrentPosition() const { return mCurrentPosition; }
 
-    bool setAudioFile(std::shared_ptr<AudioFile> audioFile) {
+    bool setAudioFile(const std::shared_ptr<AudioFile>& audioFile) {
         if (!audioFile || !audioFile->isLoaded()) {
             mLogger.error("Invalid audio file provided");
             return false;
@@ -114,7 +111,7 @@ private:
      * @param position Start position in samples
      * @return true if successful
      */
-    bool fillBuffer(std::shared_ptr<AudioBuffer> buffer, size_t position);
+    bool fillBuffer(const std::shared_ptr<AudioBuffer> &buffer, size_t position);
 
     /**
      * @brief Initialize buffer pool

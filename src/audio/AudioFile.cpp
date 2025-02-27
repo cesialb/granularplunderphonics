@@ -5,10 +5,7 @@
 
 #include "AudioFile.h"
 #include <filesystem>
-#include <algorithm>
 #include <sndfile.h>
-#include <cmath>
-#include <memory>
 #include <random>
 
 #ifdef _WIN32
@@ -42,7 +39,7 @@ AudioFile::~AudioFile() {
 }
 
     bool AudioFile::load(const std::string& path) {
-        mLogger.info(("Loading audio file: " + path).c_str());
+        mLogger.info("Loading audio file: " + path);
 
         if (path.empty()) {
             mLogger.error("Empty file path provided");
@@ -59,7 +56,7 @@ AudioFile::~AudioFile() {
 
         SNDFILE* file = sf_open(path.c_str(), SFM_READ, &sfInfo);
         if (!file) {
-            mLogger.error(("Failed to open file: " + std::string(sf_strerror(nullptr))).c_str());
+            mLogger.error("Failed to open file: " + std::string(sf_strerror(nullptr)));
             return false;
         }
 
@@ -153,7 +150,7 @@ bool AudioFile::save(const std::string& path, AudioFileFormat format) {
 
     SNDFILE* file = sf_open(path.c_str(), SFM_WRITE, &sfInfo);
     if (!file) {
-        mLogger.error(("Failed to create output file: " + std::string(sf_strerror(nullptr))).c_str());
+        mLogger.error("Failed to create output file: " + std::string(sf_strerror(nullptr)));
         return false;
     }
 
@@ -192,8 +189,8 @@ bool AudioFile::setSampleRate(double newRate) {
         return true;
     }
 
-    mLogger.info(("Converting sample rate from " + std::to_string(mInfo.sampleRate) +
-                 " to " + std::to_string(newRate)).c_str());
+    mLogger.info("Converting sample rate from " + std::to_string(mInfo.sampleRate) +
+                 " to " + std::to_string(newRate));
 
     // For test purposes, just update the rate without actual resampling
     // In a real implementation, you'd actually resample the audio data
@@ -209,7 +206,7 @@ bool AudioFile::setSampleRate(double newRate) {
     // Just update the sample rate info for now
     mInfo.sampleRate = newRate;
 
-    mLogger.info(("Sample rate converted to " + std::to_string(newRate)).c_str());
+    mLogger.info("Sample rate converted to " + std::to_string(newRate));
     return true;
 }
 
@@ -221,22 +218,9 @@ bool AudioFile::setSampleRate(double newRate) {
         // }
 
         if (newBitDepth != 16 && newBitDepth != 24 && newBitDepth != 32) {
-            mLogger.error(("Unsupported bit depth: " + std::to_string(newBitDepth)).c_str());
+            mLogger.error("Unsupported bit depth: " + std::to_string(newBitDepth));
             return false;
         }
-
-        if (newBitDepth == mInfo.bitDepth) {
-            return true;
-        }
-
-        mLogger.info(("Converting bit depth from " + std::to_string(mInfo.bitDepth) +
-                     " to " + std::to_string(newBitDepth)).c_str());
-
-        // Just update the bit depth info without actual conversion
-        mInfo.bitDepth = newBitDepth;
-
-        mLogger.info(("Bit depth converted to " + std::to_string(newBitDepth)).c_str());
-        return true;
     }
 
 bool AudioFile::enableMemoryMapping(bool enable) {
@@ -302,7 +286,7 @@ bool AudioFile::enableMemoryMapping(bool enable) {
                 return false;
             }
 
-            struct stat sb;
+            struct stat sb{};
             if (fstat(mFileDescriptor, &sb) == -1) {
                 close(mFileDescriptor);
                 mFileDescriptor = -1;
@@ -311,7 +295,7 @@ bool AudioFile::enableMemoryMapping(bool enable) {
             }
 
             mMappedSize = sb.st_size;
-            mMappedData = mmap(NULL, mMappedSize, PROT_READ, MAP_PRIVATE, mFileDescriptor, 0);
+            mMappedData = mmap(nullptr, mMappedSize, PROT_READ, MAP_PRIVATE, mFileDescriptor, 0);
 
             if (mMappedData == MAP_FAILED) {
                 close(mFileDescriptor);
@@ -354,7 +338,7 @@ bool AudioFile::enableMemoryMapping(bool enable) {
         return true;
     }
     catch (const std::exception& e) {
-        mLogger.error(("Memory mapping operation failed: " + std::string(e.what())).c_str());
+        mLogger.error("Memory mapping operation failed: " + std::string(e.what()));
         return false;
     }
 }
@@ -401,7 +385,7 @@ void AudioFile::clear() {
     mFilePath.clear();
 }
 
-AudioFileFormat AudioFile::detectFormat(const std::string& path) const {
+AudioFileFormat AudioFile::detectFormat(const std::string& path) {
     std::string extension = std::filesystem::path(path).extension().string();
     std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
 

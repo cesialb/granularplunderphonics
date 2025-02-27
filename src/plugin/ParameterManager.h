@@ -1,13 +1,10 @@
 #pragma once
 
-#include "pluginterfaces/base/funknown.h"
 #include "pluginterfaces/vst/vsttypes.h"
 #include "../common/Logger.h"
-#include <memory>
 #include <string>
 #include <vector>
 #include <map>
-#include <mutex>
 #include <atomic>
 #include <functional>
 #include <ostream>

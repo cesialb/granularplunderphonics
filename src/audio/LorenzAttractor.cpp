@@ -14,9 +14,16 @@ float LorenzAttractor::process() {
     return normalizeOutput(mState[0]);
 }
 
-void LorenzAttractor::process(float* buffer, size_t size) {
+    void LorenzAttractor::process(float* buffer, size_t size) {
+    std::lock_guard<std::mutex> lock(mMutex);
+
     for (size_t i = 0; i < size; ++i) {
-        buffer[i] = process();
+        // Update state using solver within the locked section
+        double time = 0.0;
+        mSolver.step(mSystemFunc, time, mState);
+
+        // Store result
+        buffer[i] = normalizeOutput(mState[0]);
     }
 }
 
@@ -32,7 +39,7 @@ void LorenzAttractor::resetState() {
 
 std::vector<float> LorenzAttractor::getState() const {
     std::lock_guard<std::mutex> lock(mMutex);
-    return std::vector<float>(mState.begin(), mState.end());
+    return {mState.begin(), mState.end()};
 }
 
 size_t LorenzAttractor::getDimension() const {

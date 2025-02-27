@@ -49,7 +49,7 @@ GranularPlunderphonicsController::~GranularPlunderphonicsController()
 ::Steinberg::Vst::IPlugView* GranularPlunderphonicsController::createView(::Steinberg::FIDString name)
 {
     std::string viewMessage = "View requested";
-    mLogger.info(viewMessage.c_str());
+    mLogger.info(viewMessage);
     return nullptr;
 }
 

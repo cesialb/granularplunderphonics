@@ -2,7 +2,6 @@
 
 #include <vector>
 #include <functional>
-#include <cmath>
 #include "../common/Logger.h"
 
 namespace GranularPlunderphonics {
@@ -32,7 +31,7 @@ struct SolverState {
 
 class DifferentialEquationSolver {
 public:
-    DifferentialEquationSolver(size_t dimensions, const SolverSettings& settings = SolverSettings());
+    explicit DifferentialEquationSolver(size_t dimensions, const SolverSettings& settings = SolverSettings());
 
     // Run one step of the solver
     bool step(const SystemFunction& system, double& time, StateVector& state);
@@ -59,17 +58,17 @@ private:
                         const StateVector& y, double h);
 
     // Adapt step size based on error
-    double adaptStepSize(double currentH, double error);
+    static double adaptStepSize(double currentH, double error);
 
     // Normalize state vector if needed
-    bool normalizeState(StateVector& state);
+    bool normalizeState(StateVector& state) const;
 
     // Check for instability
-    bool checkStability(const StateVector& state);
+    bool checkStability(const StateVector& state) const;
 
     // Utilities
-    double calculateNorm(const StateVector& v) const;
-    void addScaledVector(StateVector& result, const StateVector& v, double scale);
+    static double calculateNorm(const StateVector& v) ;
+    void addScaledVector(StateVector& result, const StateVector& v, double scale) const;
 
     SolverSettings mSettings;
     SolverState mState;

@@ -15,7 +15,7 @@ GrainGenerator::GrainGenerator(double sampleRate)
 {
     std::string msg = "Creating GrainGenerator instance with sample rate " +
                      std::to_string(sampleRate);
-    mLogger.info(msg.c_str());
+    mLogger.info(msg);
 }
 
 std::shared_ptr<AudioBuffer> GrainGenerator::generateGrain(
@@ -69,7 +69,7 @@ std::shared_ptr<AudioBuffer> GrainGenerator::generateGrain(
 void GrainGenerator::precalculateWindows(size_t minSize, size_t maxSize) {
     std::string msg = "Precalculating windows from " + std::to_string(minSize) +
                      " to " + std::to_string(maxSize) + " samples";
-    mLogger.info(msg.c_str());
+    mLogger.info(msg);
 
     // Calculate windows for common sizes
     std::vector<size_t> sizes;

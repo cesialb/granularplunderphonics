@@ -41,6 +41,7 @@ endif()
 find_package(spdlog REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(FFTW REQUIRED fftw3f)
+add_subdirectory("/Users/raydiator/Code/JUCE" "${CMAKE_BINARY_DIR}/JUCE_build")
 
 # Manual setup for libsamplerate
 set(SAMPLERATE_LIBRARIES "${SAMPLERATE_ROOT}/lib/libsamplerate.dylib")

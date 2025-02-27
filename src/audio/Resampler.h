@@ -1,7 +1,6 @@
 // Resampler.h
 #pragma once
 
-#include <memory>
 #include <vector>
 #include <samplerate.h>
 #include "../common/Logger.h"

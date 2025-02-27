@@ -5,7 +5,6 @@
 #include "pluginterfaces/vst/vsttypes.h"
 #include "public.sdk/source/vst/vstaudioeffect.h"
 #include "../common/Logger.h"
-#include "GranularPlunderphonicsIDs.h"
 #include "ParameterManager.h"
 #include "../audio/ModulationMatrix.h"
 #include "../audio/ChaoticBase.h"

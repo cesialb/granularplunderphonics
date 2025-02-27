@@ -15,9 +15,9 @@ StreamingManager::StreamingManager(size_t bufferSize, size_t numBuffers)
     , mCurrentPosition(0)
     , mLogger("StreamingManager")
 {
-    mLogger.info(("Creating StreamingManager with buffer size " +
+    mLogger.info("Creating StreamingManager with buffer size " +
                   std::to_string(bufferSize) + " and " +
-                  std::to_string(numBuffers) + " buffers").c_str());
+                  std::to_string(numBuffers) + " buffers");
     initializeBufferPool();
 }
 
@@ -30,8 +30,8 @@ bool StreamingManager::initialize(double sampleRate) {
     std::lock_guard<std::mutex> lock(mBufferMutex);
 
     mSampleRate = sampleRate;
-    mLogger.info(("Initialized StreamingManager with sample rate " +
-                  std::to_string(sampleRate)).c_str());
+    mLogger.info("Initialized StreamingManager with sample rate " +
+                  std::to_string(sampleRate));
 
     return true;
 }
@@ -60,8 +60,8 @@ bool StreamingManager::startStreaming(size_t startPosition) {
         }
     }
 
-    mLogger.info(("Started streaming from position " +
-                  std::to_string(startPosition)).c_str());
+    mLogger.info("Started streaming from position " +
+                  std::to_string(startPosition));
     return true;
 }
 
@@ -106,7 +106,7 @@ std::shared_ptr<AudioBuffer> StreamingManager::getNextBuffer(size_t numSamples) 
     return buffer;
 }
 
-void StreamingManager::returnBuffer(std::shared_ptr<AudioBuffer> buffer) {
+void StreamingManager::returnBuffer(const std::shared_ptr<AudioBuffer>& buffer) {
     if (!buffer) {
         return;
     }
@@ -132,12 +132,12 @@ bool StreamingManager::initializeBufferPool() {
         mFreeBuffers.push(buffer);
     }
 
-    mLogger.info(("Buffer pool initialized with " +
-                  std::to_string(mNumBuffers) + " buffers").c_str());
+    mLogger.info("Buffer pool initialized with " +
+                  std::to_string(mNumBuffers) + " buffers");
     return true;
 }
 
-bool StreamingManager::fillBuffer(std::shared_ptr<AudioBuffer> buffer, size_t position) {
+bool StreamingManager::fillBuffer(const std::shared_ptr<AudioBuffer>& buffer, size_t position) {
     if (!buffer) {
         mLogger.error("Null buffer provided to fillBuffer");
         return false;

@@ -2,7 +2,6 @@
 #pragma once
 
 #include <vector>
-#include <mutex>
 #include "../common/Logger.h"
 
 namespace GranularPlunderphonics {

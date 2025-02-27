@@ -5,15 +5,12 @@
 
 #pragma once
 
-#include <string>
 #include "../common/Logger.h"
 #include "GranularParameters.h"
 
 // Include VST3 SDK headers
 #include "base/source/fobject.h"
 #include "pluginterfaces/base/funknown.h"
-#include "pluginterfaces/base/ipluginbase.h"
-#include "pluginterfaces/vst/vsttypes.h"
 
 namespace Steinberg {
     class IBStream;  // Add this line

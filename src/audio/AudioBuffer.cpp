@@ -54,14 +54,8 @@ namespace GranularPlunderphonics {
             return false;
         }
 
-        // Added additional check here for safety
-        if (numSamples > 0 && channel < mBuffer.size() && startPos + numSamples <= mBuffer[channel].size()) {
-            std::copy(data, data + numSamples, mBuffer[channel].begin() + startPos);
-            return true;
-        }
-
-        mLogger.error("Write validation failed");
-        return false;
+        std::copy_n(data, data + numSamples, mBuffer[channel].begin() + startPos);
+        return true;
     }
 
     void AudioBuffer::resize(size_t numChannels, size_t numSamples) {
@@ -102,7 +96,7 @@ namespace GranularPlunderphonics {
 
         // Added additional check here for safety
         if (numSamples > 0 && channel < mBuffer.size() && startPos + numSamples <= mBuffer[channel].size()) {
-            std::copy(mBuffer[channel].begin() + startPos,
+            std::copy_n(mBuffer[channel].begin() + startPos,
                     mBuffer[channel].begin() + startPos + numSamples,
                     data);
             return true;

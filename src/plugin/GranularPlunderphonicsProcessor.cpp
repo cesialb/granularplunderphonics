@@ -1,12 +1,7 @@
-// This is a diagnostic version of the GranularPlunderphonicsProcessor.cpp file
-// Add this to your project temporarily to debug the issue
-// Make a backup of your original file before replacing it
-
 #include "GranularPlunderphonicsProcessor.h"
 #include "GranularPlunderphonicsIDs.h"
 #include "GranularParameters.h"
 #include "pluginterfaces/vst/ivstparameterchanges.h"
-#include "pluginterfaces/vst/ivstprocesscontext.h"
 #include "pluginterfaces/vst/vstspeaker.h"
 #include "../audio/LorenzAttractor.h"
 #include "../audio/ModulationMatrixFactory.h"
@@ -258,8 +253,8 @@ tresult PLUGIN_API GranularPlunderphonicsProcessor::terminate()
     tresult PLUGIN_API GranularPlunderphonicsProcessor::setupProcessing(ProcessSetup& setup)
     {
         std::cout << "SetupProcessing: Starting with sampleRate=" << setup.sampleRate << std::endl;
-        mLogger.info(("Setting up processing: sampleRate=" + std::to_string(setup.sampleRate) +
-                     ", maxSamplesPerBlock=" + std::to_string(setup.maxSamplesPerBlock)).c_str());
+        mLogger.info("Setting up processing: sampleRate=" + std::to_string(setup.sampleRate) +
+                     ", maxSamplesPerBlock=" + std::to_string(setup.maxSamplesPerBlock));
 
         mSampleRate = static_cast<float>(setup.sampleRate);
         mBlockSize = setup.maxSamplesPerBlock;

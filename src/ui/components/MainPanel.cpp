@@ -4,8 +4,8 @@
  */
 
 #include "MainPanel.h"
-#include "../GranularPlunderphonicsEditor.h"
-#include "../LookAndFeel/GranularLookAndFeel.h"
+#include "../../GranularPlunderphonicsEditor.h"
+#include "../../LookAndFeel/GranularLookAndFeel.h"
 
 namespace GranularPlunderphonics {
 

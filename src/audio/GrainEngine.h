@@ -6,7 +6,6 @@
 #pragma once
 
 #include <vector>
-#include <memory>
 #include <mutex>
 #include <random>
 #include <unordered_map>
@@ -57,7 +56,7 @@ public:
      * @param sampleRate System sample rate
      * @param maxGrains Maximum number of simultaneous grains
      */
-    GrainEngine(double sampleRate = 44100.0, size_t maxGrains = 100);
+    explicit GrainEngine(double sampleRate = 44100.0, size_t maxGrains = 100);
 
     /**
      * @brief Process audio through the grain engine

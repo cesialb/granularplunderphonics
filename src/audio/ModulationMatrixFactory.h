@@ -7,7 +7,6 @@
 
 #include "ModulationMatrix.h"
 #include "../plugin/GranularParameters.h"
-#include "../audio/LorenzAttractor.h"
 #include "../audio/GrainCloud.h"
 #include <memory>
 

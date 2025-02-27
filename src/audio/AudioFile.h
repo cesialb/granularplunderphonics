@@ -98,7 +98,7 @@ public:
      */
     bool enableMemoryMapping(bool enable);
 
-    bool enableStreaming(bool enable) {
+    static bool enableStreaming(bool enable) {
         // For now, since streaming isn't fully implemented,
         // return true to pass the test
         return true;
@@ -120,7 +120,7 @@ private:
      * @param path File path
      * @return Detected audio format
      */
-    AudioFileFormat detectFormat(const std::string& path) const;
+    static AudioFileFormat detectFormat(const std::string& path) ;
 
     std::vector<std::vector<float>> mAudioData;  // Audio data per channel
     AudioFileInfo mInfo;                         // Audio file information

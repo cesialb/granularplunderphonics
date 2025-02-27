@@ -7,10 +7,6 @@
 
 #include <vector>
 #include <queue>
-#include <memory>
-#include <mutex>
-#include <atomic>
-#include <chrono>
 #include <thread>
 #include <unordered_map>
 #include "Logger.h"
@@ -74,6 +70,15 @@ private:
     MemoryPool* getOrCreatePool(size_t size);
     void startMonitoring();
     void stopMonitoring();
+
+    size_t getTotalSystemMemory();
+
+    size_t getAvailableSystemMemory();
+
+    int getNumberOfCPUCores();
+
+    float getCurrentCPULoad();
+
     void updateResourceStats();
     float measureCPULoad();
     void cleanup();

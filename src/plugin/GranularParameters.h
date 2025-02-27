@@ -6,7 +6,6 @@
 #pragma once
 
 #include "ParameterManager.h"
-#include "../common/ErrorHandling.h"
 
 namespace GranularPlunderphonics {
 
@@ -66,8 +65,8 @@ public:
         // Grain density parameter (0.1-100Hz, default 10Hz, logarithmic)
         success &= paramManager.registerParameter(createGrainDensity());
 
-        logger.info((std::string("Parameter registration ") +
-            (success ? "succeeded" : "failed")).c_str());
+        logger.info(std::string("Parameter registration ") +
+            (success ? "succeeded" : "failed"));
 
         return success;
     }

@@ -3,8 +3,6 @@
 #include "ChaoticBase.h"
 #include "DifferentialEquationSolver.h"
 #include <cmath>
-#include <array>
-#include <mutex>
 
 namespace GranularPlunderphonics {
 

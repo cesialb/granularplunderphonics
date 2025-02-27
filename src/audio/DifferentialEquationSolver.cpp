@@ -1,5 +1,4 @@
 #include "DifferentialEquationSolver.h"
-#include <algorithm>
 
 namespace GranularPlunderphonics {
 
@@ -19,7 +18,7 @@ DifferentialEquationSolver::DifferentialEquationSolver(size_t dimensions,
     mK4.resize(dimensions);
     mTemp.resize(dimensions);
 
-    mLogger.info(("Created solver with " + std::to_string(dimensions) + " dimensions").c_str());
+    mLogger.info("Created solver with " + std::to_string(dimensions) + " dimensions");
 }
 
 void DifferentialEquationSolver::reset() {
@@ -149,8 +148,8 @@ double DifferentialEquationSolver::estimateError(const SystemFunction& system,
 
 double DifferentialEquationSolver::adaptStepSize(double currentH, double error) {
     // Using PI controller for step size adaptation
-    const double alpha = 0.7;  // Proportional term
-    const double beta = 0.4;   // Integral term
+    constexpr double alpha = 0.7;  // Proportional term
+    constexpr double beta = 0.4;   // Integral term
     static double lastError = error;
 
     double factor = std::pow(1.0/error, alpha) * std::pow(1.0/lastError, beta);
@@ -160,7 +159,7 @@ double DifferentialEquationSolver::adaptStepSize(double currentH, double error) 
     return currentH * factor;
 }
 
-bool DifferentialEquationSolver::normalizeState(StateVector& state) {
+bool DifferentialEquationSolver::normalizeState(StateVector& state) const {
     double norm = calculateNorm(state);
     if (norm > mSettings.normalizationThreshold) {
         for (auto& val : state) {
@@ -171,7 +170,7 @@ bool DifferentialEquationSolver::normalizeState(StateVector& state) {
     return false;
 }
 
-bool DifferentialEquationSolver::checkStability(const StateVector& state) {
+bool DifferentialEquationSolver::checkStability(const StateVector& state) const {
     for (const auto& val : state) {
         if (std::isnan(val) || std::isinf(val) || 
             std::abs(val) > mSettings.stabilityThreshold) {
@@ -181,7 +180,7 @@ bool DifferentialEquationSolver::checkStability(const StateVector& state) {
     return true;
 }
 
-double DifferentialEquationSolver::calculateNorm(const StateVector& v) const {
+double DifferentialEquationSolver::calculateNorm(const StateVector& v) {
     double sumSq = 0.0;
     for (const auto& val : v) {
         sumSq += val * val;
@@ -191,7 +190,7 @@ double DifferentialEquationSolver::calculateNorm(const StateVector& v) const {
 
 void DifferentialEquationSolver::addScaledVector(StateVector& result,
                                                const StateVector& v,
-                                               double scale) {
+                                               double scale) const {
     for (size_t i = 0; i < mDimensions; ++i) {
         result[i] += scale * v[i];
     }

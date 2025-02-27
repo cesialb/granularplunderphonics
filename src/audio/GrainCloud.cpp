@@ -6,7 +6,6 @@
 #include "GrainCloud.h"
 #include <algorithm>
 #include <cmath>
-#include <numeric>
 
 namespace GranularPlunderphonics {
 
@@ -193,10 +192,10 @@ void GrainCloud::processActiveGrains(const AudioBuffer& source, AudioBuffer& out
         mProcessingParams = params;
 
         // Log parameter changes
-        mLogger.debug(("Updated processing parameters - timeStretch: " +
+        mLogger.debug("Updated processing parameters - timeStretch: " +
                       std::to_string(params.timeStretch) +
                       ", pitchShift: " + std::to_string(params.pitchShift) +
-                      ", formantShift: " + std::to_string(params.formantShift)).c_str());
+                      ", formantShift: " + std::to_string(params.formantShift));
     }
 
 float GrainCloud::calculateEnvelope(float phase, GrainShapeType shape) {
@@ -219,7 +218,7 @@ float GrainCloud::calculateEnvelope(float phase, GrainShapeType shape) {
 }
 
 float GrainCloud::interpolateSample(const AudioBuffer& buffer, float position) {
-    size_t pos1 = static_cast<size_t>(position);
+    auto pos1 = static_cast<size_t>(position);
     size_t pos2 = pos1 + 1;
 
     if (pos2 >= buffer.getNumSamples()) {

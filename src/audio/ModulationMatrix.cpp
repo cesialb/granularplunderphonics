@@ -82,7 +82,7 @@ bool ModulationMatrix::registerAttractorSources(const std::string& id,
         std::string dimName = name + " " + dimensions[i];
 
         // Create a capture of both the attractor and the dimension index
-        auto valueGetter = [attractor, i]() -> float {
+        auto valueGetter = [attractor=attractor, i]() -> float {
             std::vector<float> state = attractor->getState();
             return (i < state.size()) ? state[i] : 0.0f;
         };
@@ -94,9 +94,10 @@ bool ModulationMatrix::registerAttractorSources(const std::string& id,
     auto patternData = attractor->analyzePattern();
 
     // Register periodicity as a modulation source
-    auto periodicityGetter = [attractor]() -> float {
+    auto periodicityGetter = [attractor=attractor]() -> float {
         return attractor->analyzePattern().periodicity;
     };
+
     success &= registerSource(id + "_Periodicity", name + " Periodicity",
                              periodicityGetter, false, 0.0f, 1.0f);
 

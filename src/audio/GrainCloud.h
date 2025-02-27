@@ -6,9 +6,7 @@
 #pragma once
 
 #include <vector>
-#include <memory>
 #include <random>
-#include <atomic>
 #include <mutex>
 #include "AudioBuffer.h"
 #include "GrainGenerator.h"
@@ -76,7 +74,7 @@ public:
      * @param maxGrains Maximum number of simultaneous grains
      * @param sampleRate System sample rate
      */
-    GrainCloud(size_t maxGrains = 100, double sampleRate = 44100.0);
+    explicit GrainCloud(size_t maxGrains = 100, double sampleRate = 44100.0);
 
     /**
      * @brief Process audio through the grain cloud

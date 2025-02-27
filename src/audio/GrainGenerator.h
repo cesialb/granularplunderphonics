@@ -6,7 +6,6 @@
 #pragma once
 
 #include <vector>
-#include <memory>
 #include <functional>
 #include "AudioBuffer.h"
 #include "../common/Logger.h"

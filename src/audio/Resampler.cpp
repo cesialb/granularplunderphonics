@@ -1,6 +1,5 @@
 // Resampler.cpp
 #include "Resampler.h"
-#include <cstring>
 
 namespace GranularPlunderphonics {
 
@@ -23,16 +22,16 @@ std::vector<float> Resampler::process(
 {
     if (input.empty()) {
         mLogger.warn("Empty input buffer provided to resampler");
-        return std::vector<float>();
+        return {};
     }
 
     if (inputSampleRate <= 0 || outputSampleRate <= 0) {
         mLogger.error("Invalid sample rates provided");
-        return std::vector<float>();
+        return {};
     }
 
     // Implementation here...
-    return std::vector<float>(); // Placeholder
+    return {}; // Placeholder
 }
 
 std::vector<std::vector<float>> Resampler::processMultiChannel(
@@ -42,7 +41,7 @@ std::vector<std::vector<float>> Resampler::processMultiChannel(
 {
     if (inputs.empty()) {
         mLogger.warn("Empty input provided to multi-channel resampler");
-        return std::vector<std::vector<float>>();
+        return {};
     }
 
     std::vector<std::vector<float>> outputs;
@@ -53,7 +52,7 @@ std::vector<std::vector<float>> Resampler::processMultiChannel(
 
         if (outputs.back().empty()) {
             mLogger.error("Failed to process channel in multi-channel resampling");
-            return std::vector<std::vector<float>>();
+            return {};
         }
     }
 
@@ -83,7 +82,7 @@ bool Resampler::initialize() {
     mResampler = src_new(static_cast<int>(mQuality), 1, &error);
 
     if (!mResampler) {
-        mLogger.error(("Failed to initialize resampler: " + std::string(src_strerror(error))).c_str());
+        mLogger.error("Failed to initialize resampler: " + std::string(src_strerror(error)));
         return false;
     }
 
