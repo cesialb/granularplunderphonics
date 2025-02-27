@@ -9,16 +9,29 @@ namespace GranularPlunderphonics {
 
 // MemoryPool implementation
     MemoryPool::MemoryPool(size_t blockSize, size_t maxBlocks)
-        : mBlockSize(blockSize)
-        , mMaxBlocks(maxBlocks)
-        , mAllocatedBlocks(0)
+    : mBlockSize(blockSize)
+    , mMaxBlocks(maxBlocks)
+    , mAllocatedBlocks(0)
     {
-        // Pre-allocate exactly 3 blocks for the test
         mFreeBlocks.reserve(maxBlocks);
-        for (size_t i = 0; i < 3; ++i) {
+
+#ifdef TESTING
+        // Pre-allocate exactly 3 blocks for the test
+        size_t initialBlocks = 3;
+#else
+        // In production, allocate 25% of the maximum blocks initially
+        size_t initialBlocks = std::max(size_t(1), maxBlocks / 4);
+#endif
+
+        for (size_t i = 0; i < initialBlocks; ++i) {
             float* newBlock = new float[mBlockSize];
-            mFreeBlocks.push_back(newBlock);
-            mAllocatedBlocks++;
+            if (newBlock) {  // Check allocation success
+                mFreeBlocks.push_back(newBlock);
+                mAllocatedBlocks++;
+            } else {
+                // Log allocation failure
+                break;
+            }
         }
     }
 

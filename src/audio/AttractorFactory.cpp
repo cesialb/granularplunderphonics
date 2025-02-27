@@ -1,6 +1,7 @@
 #include "AttractorFactory.h"
 #include "ChaoticAttractors.h"
 #include "LorenzAttractor.h"
+#include "../common/ErrorHandling.h"
 
 namespace GranularPlunderphonics {
 
@@ -11,7 +12,12 @@ namespace GranularPlunderphonics {
         else if (type == "lorenz") {
             return std::make_unique<LorenzAttractor>(sampleRate);
         }
-        return nullptr;
+
+        // Instead of returning nullptr, throw an exception with detailed error information
+        throw GranularPlunderphonicsException(
+            ErrorCodes::kInvalidParameter,
+            "Unsupported attractor type: " + type
+        );
     }
 
 } // namespace GranularPlunderphonics

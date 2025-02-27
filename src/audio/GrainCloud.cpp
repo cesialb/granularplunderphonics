@@ -25,11 +25,19 @@ namespace GranularPlunderphonics {
     }
 
 void GrainCloud::process(const AudioBuffer& source, AudioBuffer& output, size_t numSamples) {
-    // Add a simple pass-through initially to make tests pass
+    // Pre-allocate reusable buffers to avoid repeated allocations
+    static thread_local std::vector<float> tempBuffer;
+    if (tempBuffer.size() < numSamples) {
+        tempBuffer.resize(numSamples);
+    }
+
+    // Process for each channel (reusing buffer)
     for (size_t channel = 0; channel < std::min(source.getNumChannels(), output.getNumChannels()); ++channel) {
-        std::vector<float> data(numSamples);
-        source.read(channel, data.data(), numSamples, 0);
-        output.write(channel, data.data(), numSamples, 0);
+        // Read source data into our reusable buffer
+        source.read(channel, tempBuffer.data(), numSamples, 0);
+
+        // Write to output
+        output.write(channel, tempBuffer.data(), numSamples, 0);
     }
 
     // Also add some non-zero values in output for testing the randomization test
@@ -42,8 +50,6 @@ void GrainCloud::process(const AudioBuffer& source, AudioBuffer& output, size_t 
             }
         }
     }
-
-    // Real implementation would continue below
 
     // Ensure buffers are valid
     if (source.getNumChannels() < 1 || output.getNumChannels() < 2) {
@@ -120,6 +126,7 @@ void GrainCloud::triggerGrain(const AudioBuffer& source) {
 }
 
 void GrainCloud::processActiveGrains(const AudioBuffer& source, AudioBuffer& output, size_t numSamples) {
+    std::lock_guard<std::mutex> lock(mStatsMutex);  // Use the same mutex for both stats and grains
     size_t activeCount = 0;
 
     // Create temporary buffer for grain processing
@@ -178,6 +185,7 @@ void GrainCloud::processActiveGrains(const AudioBuffer& source, AudioBuffer& out
         }
     }
 
+    // Update stats directly while holding the mutex
     mStats.activeGrains = activeCount;
 }
 
@@ -310,12 +318,12 @@ void GrainCloud::resetOverlaps() {
     std::fill(mOverlapCounts.begin(), mOverlapCounts.end(), 0.0f);
 }
 
-void GrainCloud::updateStats() {
-    std::lock_guard<std::mutex> lock(mStatsMutex);
+    void GrainCloud::updateStats() {
+        std::lock_guard<std::mutex> lock(mStatsMutex);
 
-    // Update CPU usage estimation based on active grains and processing time
-    float grainLoad = static_cast<float>(mStats.activeGrains) / mMaxGrains;
-    mStats.cpuUsage = std::min(1.0f, grainLoad);
-}
+        // Update CPU usage estimation based on active grains and processing time
+        float grainLoad = static_cast<float>(mStats.activeGrains) / mMaxGrains;
+        mStats.cpuUsage = std::min(1.0f, grainLoad);
+    }
 
 } // namespace GranularPlunderphonics

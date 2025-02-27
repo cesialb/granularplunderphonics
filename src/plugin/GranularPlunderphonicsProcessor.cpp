@@ -47,46 +47,49 @@ namespace GranularPlunderphonics {
     //------------------------------------------------------------------------
     tresult PLUGIN_API GranularPlunderphonicsProcessor::initialize(::Steinberg::FUnknown* context)
     {
-        std::cout << "Initialize: Starting with context=" << (context ? "valid" : "nullptr") << std::endl;
+        // Use the logger instead of std::cout
+        mLogger.info("Initializing processor");
 
         // First call parent implementation
-        std::cout << "Initialize: Calling AudioEffect::initialize" << std::endl;
         tresult result = AudioEffect::initialize(context);
         if (result != kResultOk) {
-            std::cout << "Initialize: Parent initialize failed with result=" << result << std::endl;
+            mLogger.error(("Parent initialize failed with result=" + std::to_string(result))
             return result;
         }
-        std::cout << "Initialize: Parent initialize succeeded" << std::endl;
+        mLogger.info("Parent initialize succeeded");
 
         // Register parameters with parameter manager
-        std::cout << "Initialize: Registering parameters" << std::endl;
         if (!GranularParameters::registerParameters(mParameterManager)) {
-            std::cout << "Initialize: Parameter registration failed" << std::endl;
+            mLogger.error("Parameter registration failed");
             return kInternalError;
         }
-        std::cout << "Initialize: Parameters registered successfully" << std::endl;
+        mLogger.info("Parameters registered successfully");
 
         // Create modulation matrix
-        std::cout << "Initialize: Creating modulation matrix" << std::endl;
         try {
             mModulationMatrix = ModulationMatrixFactory::createStandardMatrix(
                 mParameterManager, mAttractors, mCloudParams, mSampleRate);
+
             if (!mModulationMatrix) {
-                std::cout << "Initialize: Failed to create modulation matrix" << std::endl;
+                mLogger.error("Failed to create modulation matrix");
                 return kInternalError;
             }
+        } catch (const GranularPlunderphonicsException& e) {
+            // Log with specific error information from our exception type
+            mLogger.error("Exception in modulation matrix creation: [" +
+                         std::to_string(e.getErrorCode()) + "] " + e.what());
+            return ErrorHandler::toVstResult(e.getErrorCode());
         } catch (const std::exception& e) {
-            std::cout << "Initialize: Exception in modulation matrix creation: " << e.what() << std::endl;
+            // Log standard exceptions
+            mLogger.error("Standard exception in modulation matrix creation: " + std::string(e.what()));
             return kInternalError;
         } catch (...) {
-            std::cout << "Initialize: Unknown exception in modulation matrix creation" << std::endl;
+            // Log unknown exceptions
+            mLogger.error("Unknown exception in modulation matrix creation");
             return kInternalError;
         }
 
-        std::cout << "Initialize: Modulation matrix created successfully" << std::endl;
-        mLogger.info("Modulation matrix initialized");
-
-        std::cout << "Initialize: Complete, returning kResultOk" << std::endl;
+        mLogger.info("Modulation matrix initialized successfully");
         return kResultOk;
     }
 
