@@ -1,50 +1,19 @@
 # Build directories
 build/
-bin/
-lib/
-CMakeFiles/
-CMakeCache.txt
-cmake_install.cmake
-*.cmake
-Makefile
-
-# VST3 output
-VST3/
-
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
+cmake-build-*/
 
 # IDE files
 .idea/
 .vscode/
-cmake-build-*/
+*.code-workspace
 .vs/
-*.swp
-*.swo
-*~
+*.xcworkspace/
+*.xcodeproj/
+*.xccheckout
+*.pbxuser
+*.mode1v3
+*.mode2v3
+xcuserdata/
 
 # macOS specific
 .DS_Store
@@ -52,19 +21,40 @@ cmake-build-*/
 .LSOverride
 ._*
 
-# Windows specific
-Thumbs.db
-ehthumbs.db
-Desktop.ini
+# Binary files
+*.dll
+*.so
+*.dylib
+*.vst3
+*.component
+*.app
+
+# Compiled Object files
+*.o
+*.obj
+*.lo
+*.slo
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# CMake temporary files
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
 
 # Log files
 *.log
-logs/
-
-# Temporary files
-temp/
-tmp/
-
-# External dependencies that should be installed separately
-# Uncomment if you don't want to track the VST3 SDK as a submodule
-# vst3sdk/

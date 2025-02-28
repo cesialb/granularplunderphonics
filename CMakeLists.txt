@@ -1,73 +1,44 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.18)
+
 project(GranularPlunderphonics VERSION 0.1.0)
 
-# Add Homebrew paths explicitly
-list(APPEND CMAKE_PREFIX_PATH
-        "/opt/homebrew/Cellar/fftw/3.3.10_2"
-        "/opt/homebrew/Cellar/libsamplerate/0.2.2"  # Add this line
-)
-set(FFTW_ROOT "/opt/homebrew/Cellar/fftw/3.3.10_2")
-set(SAMPLERATE_ROOT "/opt/homebrew/Cellar/libsamplerate/0.2.2")  # Add this line
-
-# C++17 Standard
+# Configure C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "macOS architectures to build for")
 
-# Set build type if not specified
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Debug)
-endif()
+# Add JUCE as a submodule or via FetchContent
+option(JUCE_SUBMODULE "Use JUCE as a submodule" OFF)
 
-# Define DEVELOPMENT for Debug builds and RELEASE for Release builds
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_definitions(-DDEVELOPMENT=1 -D_DEBUG=1)
+if(JUCE_SUBMODULE)
+    add_subdirectory(ThirdParty/JUCE)
 else()
-    add_definitions(-DRELEASE=1 -DNDEBUG=1)
+    include(FetchContent)
+    FetchContent_Declare(
+            JUCE
+            GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
+            GIT_TAG 7.0.2
+    )
+    FetchContent_MakeAvailable(JUCE)
 endif()
 
-# Set VST3 SDK path and options
-set(VST3_SDK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/vst3sdk" CACHE PATH "Path to VST3 SDK")
-set(SMTG_ADD_VST3_HOSTING_SAMPLES OFF CACHE BOOL "Don't build hosting samples")
-set(SMTG_ADD_VST3_PLUGINS_SAMPLES OFF CACHE BOOL "Don't build plugin samples")
-set(SMTG_CREATE_PLUGIN_LINK ON CACHE BOOL "Create symlink for plugins")
+# Enable VST3 format
+option(JUCE_BUILD_VST3 "Build VST3 plugin" ON)
+option(JUCE_BUILD_STANDALONE "Build standalone plugin" ON)
+option(BUILD_TESTING "Build the testing executable" ON)
 
-# Verify SDK exists
-if(NOT EXISTS ${VST3_SDK_ROOT}/CMakeLists.txt)
-    message(FATAL_ERROR "VST3 SDK not found. Please initialize submodules or specify VST3_SDK_ROOT.")
+# JUCE-specific settings
+set_directory_properties(PROPERTIES JUCE_COMPANY_NAME "YourCompany")
+set_directory_properties(PROPERTIES JUCE_COMPANY_WEBSITE "www.yourcompany.com")
+set_directory_properties(PROPERTIES JUCE_COMPANY_EMAIL "info@yourcompany.com")
+
+# Include JUCE modules
+include(${JUCE_ROOT}/extras/Build/CMake/JUCEModuleSupport.cmake)
+
+# Add our source directory
+add_subdirectory(Source)
+
+# Add test directory if testing is enabled
+if(BUILD_TESTING)
+    add_subdirectory(Tests)
 endif()
-
-# Find dependencies
-find_package(spdlog REQUIRED)
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(FFTW REQUIRED fftw3f)
-add_subdirectory("/Users/raydiator/Code/JUCE" "${CMAKE_BINARY_DIR}/JUCE_build")
-
-# Manual setup for libsamplerate
-set(SAMPLERATE_LIBRARIES "${SAMPLERATE_ROOT}/lib/libsamplerate.dylib")
-set(SAMPLERATE_INCLUDE_DIRS "${SAMPLERATE_ROOT}/include")
-
-# Add explicit link directories
-link_directories(
-        ${FFTW_ROOT}/lib
-        ${SAMPLERATE_ROOT}/lib  # Add this line
-)
-
-# VST3 SDK setup - this must come before our own targets
-add_subdirectory(${VST3_SDK_ROOT} vst3sdk)
-
-# Make VST3 SDK headers available
-include_directories(
-        ${VST3_SDK_ROOT}
-        ${VST3_SDK_ROOT}/pluginterfaces
-        ${VST3_SDK_ROOT}/base
-        ${VST3_SDK_ROOT}/public.sdk
-        ${SAMPLERATE_INCLUDE_DIRS}  # Add this line
-)
-
-# Enable testing
-enable_testing()
-
-# Add subdirectories
-add_subdirectory(src)
-add_subdirectory(test)
